@@ -23,7 +23,7 @@ function calcMoM(products: Product[]) {
   const prev = monthKeys[monthKeys.length - 2];
 
   if (!current || !prev) {
-    return { revenue: null as number | null, profit: null as number | null };
+    return { revenue: null as number | null, profit: null as number | null, pointProfit: null as number | null };
   }
 
   const sumByMonth = (monthKey: string) => {
@@ -31,6 +31,7 @@ function calcMoM(products: Product[]) {
     return {
       revenue: target.reduce((sum, p) => sum + (p.salePrice || 0), 0),
       profit: target.reduce((sum, p) => sum + calculateProfit(p), 0),
+      pointProfit: target.reduce((sum, p) => sum + ((p.salePrice || 0) - p.purchasePrice), 0),
     };
   };
 
@@ -45,7 +46,28 @@ function calcMoM(products: Product[]) {
   return {
     revenue: calc(cur.revenue, prv.revenue),
     profit: calc(cur.profit, prv.profit),
+    pointProfit: calc(cur.pointProfit, prv.pointProfit),
   };
+}
+
+function calcInventoryMoM(products: Product[]) {
+  const inventory = products.filter((p) => p.status === 'inventory' && p.purchaseDate);
+  const monthKeys = Array.from(new Set(inventory.map((p) => getMonthKey(p.purchaseDate)).filter(Boolean))).sort();
+  const current = monthKeys[monthKeys.length - 1];
+  const prev = monthKeys[monthKeys.length - 2];
+
+  if (!current || !prev) return null;
+
+  const sumByMonth = (monthKey: string) =>
+    inventory
+      .filter((p) => getMonthKey(p.purchaseDate) === monthKey)
+      .reduce((sum, p) => sum + p.purchasePrice, 0);
+
+  const cur = sumByMonth(current);
+  const prv = sumByMonth(prev);
+  if (prv === 0) return null;
+
+  return ((cur - prv) / Math.abs(prv)) * 100;
 }
 
 function buildMonthlySeries(products: Product[]) {
@@ -79,6 +101,7 @@ export function Dashboard({ products }: DashboardProps) {
 
   const summary = calculateProfitSummary(products);
   const mom = calcMoM(products);
+  const inventoryMom = calcInventoryMoM(products);
   const monthly = buildMonthlySeries(products);
   const maxRevenue = Math.max(1, ...monthly.map((m) => m.revenue));
   const maxProfitAbs = Math.max(1, ...monthly.map((m) => Math.max(Math.abs(m.profit), Math.abs(m.pointProfit))));
@@ -104,12 +127,16 @@ export function Dashboard({ products }: DashboardProps) {
     {
       label: 'P利益',
       value: formatCurrency(summary.totalPointProfit),
+      sub: momText(mom.pointProfit),
+      subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: TrendingUp,
       tone: 'from-teal-100 to-emerald-100 text-teal-700',
     },
     {
       label: '在庫評価',
       value: formatCurrency(summary.inventoryValue),
+      sub: momText(inventoryMom),
+      subTone: inventoryMom === null ? 'text-slate-500' : inventoryMom >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: Package,
       tone: 'from-amber-100 to-orange-100 text-amber-700',
     },
