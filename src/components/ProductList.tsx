@@ -19,9 +19,14 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const currentMonthStart = new Date();
+  currentMonthStart.setDate(1);
+  const nextMonthStart = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 1);
+  const fmt = (d: Date) => d.toISOString().split('T')[0];
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const [fromDate, setFromDate] = useState(fmt(currentMonthStart));
+  const [toDate, setToDate] = useState(fmt(new Date(nextMonthStart.getTime() - 1)));
   const [sortKey, setSortKey] = useState<SortKey>('purchaseDateDesc');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -29,7 +34,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     const q = query.trim().toLowerCase();
 
     const list = products.filter((p) => {
-      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+      if (statusFilter === 'pending') {
+        if (!(p.status === 'pending' || p.status === 'inventory')) return false;
+      } else if (statusFilter !== 'all' && p.status !== statusFilter) {
+        return false;
+      }
 
       if (fromDate && p.purchaseDate < fromDate) return false;
       if (toDate && p.purchaseDate > toDate) return false;
@@ -195,9 +204,9 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
               <option value="all">ステータス: すべて</option>
+              <option value="pending">未着/待機+在庫</option>
               <option value="sold">売却済み</option>
-              <option value="inventory">在庫</option>
-              <option value="pending">待機中</option>
+              <option value="inventory">在庫のみ</option>
             </select>
 
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-field" />
