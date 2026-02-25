@@ -47,6 +47,25 @@ function calcMoM(products: Product[]) {
   };
 }
 
+function buildMonthlySeries(products: Product[]) {
+  const sold = products.filter((p) => p.status === 'sold' && p.saleDate);
+  const monthMap = new Map<string, { revenue: number; profit: number }>();
+
+  for (const p of sold) {
+    const key = getMonthKey(p.saleDate);
+    if (!key) continue;
+    const cur = monthMap.get(key) || { revenue: 0, profit: 0 };
+    cur.revenue += p.salePrice || 0;
+    cur.profit += calculateProfit(p);
+    monthMap.set(key, cur);
+  }
+
+  return Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6)
+    .map(([month, values]) => ({ month, ...values }));
+}
+
 function momText(value: number | null) {
   if (value === null) return '前月比 -';
   const sign = value >= 0 ? '+' : '';
@@ -56,6 +75,8 @@ function momText(value: number | null) {
 export function Dashboard({ products }: DashboardProps) {
   const summary = calculateProfitSummary(products);
   const mom = calcMoM(products);
+  const monthly = buildMonthlySeries(products);
+  const maxRevenue = Math.max(1, ...monthly.map((m) => m.revenue));
 
   const stats = [
     {
@@ -105,6 +126,30 @@ export function Dashboard({ products }: DashboardProps) {
             </div>
           );
         })}
+      </div>
+
+      <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-slate-800">月次グラフ（売上）</h3>
+          <p className="text-xs text-soft">直近6か月</p>
+        </div>
+        {monthly.length === 0 ? (
+          <p className="text-sm text-soft">売却データがありません</p>
+        ) : (
+          <div className="grid grid-cols-6 gap-2 items-end h-40">
+            {monthly.map((m) => (
+              <div key={m.month} className="flex flex-col items-center justify-end h-full">
+                <div className="text-[10px] text-soft mb-1">{Math.round((m.revenue / maxRevenue) * 100)}%</div>
+                <div
+                  className="w-full rounded-t-md bg-gradient-to-t from-sky-500 to-cyan-400"
+                  style={{ height: `${Math.max(8, (m.revenue / maxRevenue) * 100)}%` }}
+                  title={`${m.month} 売上: ${formatCurrency(m.revenue)} / 利益: ${formatCurrency(m.profit)}`}
+                />
+                <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
