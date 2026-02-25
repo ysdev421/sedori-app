@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, Package } from 'lucide-react';
+﻿import { DollarSign, Package, TrendingUp } from 'lucide-react';
 import { calculateProfitSummary, formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -14,75 +14,66 @@ export function Dashboard({ products }: DashboardProps) {
       label: '総売上',
       value: formatCurrency(summary.totalRevenue),
       icon: DollarSign,
-      color: 'bg-blue-100 text-blue-600',
+      tone: 'from-sky-100 to-cyan-100 text-sky-700',
     },
     {
       label: '総利益',
       value: formatCurrency(summary.totalProfit),
       icon: TrendingUp,
-      color: 'bg-green-100 text-green-600',
-      highlight: summary.totalProfit >= 0,
+      tone: 'from-emerald-100 to-green-100 text-emerald-700',
+      negative: summary.totalProfit < 0,
     },
     {
       label: 'P利益',
       value: formatCurrency(summary.totalPointProfit),
       icon: TrendingUp,
-      color: 'bg-emerald-100 text-emerald-600',
+      tone: 'from-teal-100 to-emerald-100 text-teal-700',
     },
     {
-      label: '在庫',
+      label: '在庫評価',
       value: formatCurrency(summary.inventoryValue),
       icon: Package,
-      color: 'bg-orange-100 text-orange-600',
+      tone: 'from-amber-100 to-orange-100 text-amber-700',
     },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div
-              key={index}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-            >
-              <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}>
-                <Icon className="w-6 h-6" />
+            <div key={index} className="card p-4">
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${stat.tone} flex items-center justify-center mb-3`}>
+                <Icon className="w-5 h-5" />
               </div>
-              <p className="text-xs text-gray-600 font-medium">{stat.label}</p>
-              <p className={`text-xl font-bold mt-1 ${stat.highlight === false ? 'text-red-600' : 'text-gray-900'}`}>
-                {stat.value}
-              </p>
+              <p className="text-xs text-soft font-semibold tracking-wide">{stat.label}</p>
+              <p className={`text-2xl font-black mt-1 ${stat.negative ? 'text-rose-600' : 'text-slate-900'}`}>{stat.value}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Summary */}
-      <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-200 rounded-lg p-4 space-y-3">
-        <h3 className="font-semibold text-gray-900">サマリー</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">商品登録数</span>
-            <span className="font-semibold text-gray-900">{summary.totalProducts}件</span>
+      <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
+        <h3 className="font-bold text-slate-800 mb-3">サマリー</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <div>
+            <p className="text-soft">商品数</p>
+            <p className="font-bold text-lg text-slate-900">{summary.totalProducts}</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">売却済</span>
-            <span className="font-semibold text-green-600">{summary.soldCount}件</span>
+          <div>
+            <p className="text-soft">売却済み</p>
+            <p className="font-bold text-lg text-emerald-700">{summary.soldCount}</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">待機中/未着</span>
-            <span className="font-semibold text-gray-900">{summary.waitingCount}件</span>
+          <div>
+            <p className="text-soft">待機/未着</p>
+            <p className="font-bold text-lg text-slate-900">{summary.waitingCount}</p>
           </div>
-          <div className="border-t border-sky-200 pt-2 mt-2 flex justify-between">
-            <span className="text-gray-600">利益率</span>
-            <span className="font-semibold text-gray-900">
-              {summary.totalRevenue > 0
-                ? `${((summary.totalProfit / summary.totalRevenue) * 100).toFixed(1)}%`
-                : '0%'}
-            </span>
+          <div>
+            <p className="text-soft">利益率</p>
+            <p className="font-bold text-lg text-slate-900">
+              {summary.totalRevenue > 0 ? `${((summary.totalProfit / summary.totalRevenue) * 100).toFixed(1)}%` : '0%'}
+            </p>
           </div>
         </div>
       </div>

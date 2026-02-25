@@ -3,12 +3,28 @@
 @import 'tailwindcss/utilities';
 
 @layer base {
+  :root {
+    --bg-a: #f3f8ff;
+    --bg-b: #f8fbff;
+    --bg-c: #eef6f4;
+    --ink-strong: #0f172a;
+    --ink-soft: #475569;
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+  }
+
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    color: var(--ink-strong);
+    background:
+      radial-gradient(circle at 10% 10%, #dbeafe 0%, transparent 28%),
+      radial-gradient(circle at 85% 12%, #cffafe 0%, transparent 24%),
+      radial-gradient(circle at 70% 85%, #dcfce7 0%, transparent 24%),
+      linear-gradient(135deg, var(--bg-a), var(--bg-b) 46%, var(--bg-c));
+    min-height: 100vh;
   }
 
   input[type='date'],
@@ -29,15 +45,40 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-xl transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 0 12px 30px rgba(14, 116, 144, 0.28);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 32px rgba(14, 116, 144, 0.32);
   }
 
   .card {
-    @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition;
+    @apply rounded-2xl transition duration-300;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   }
 
   .input-field {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none transition;
+    @apply w-full px-4 py-2.5 border rounded-xl outline-none transition;
+    border-color: rgba(148, 163, 184, 0.5);
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  .input-field:focus {
+    border-color: rgba(14, 165, 233, 0.6);
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+  }
+
+  .glass-panel {
+    @apply rounded-2xl;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.09);
   }
 }
 
@@ -47,7 +88,11 @@
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.28s ease-out;
+  }
+
+  .text-soft {
+    color: var(--ink-soft);
   }
 
   @keyframes slideIn {

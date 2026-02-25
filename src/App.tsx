@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
@@ -15,73 +15,51 @@ function App() {
   const { products, deleteProductData } = useProducts(user?.id || null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // ローディング中
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">ロード中...</p>
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="glass-panel p-8 text-center w-full max-w-sm">
+          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-soft">読み込み中...</p>
         </div>
       </div>
     );
   }
 
-  // ログイン画面
   if (!user) {
     return <LoginForm />;
   }
 
-  // メイン画面
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        userName={user.displayName || user.email}
-        products={products}
-      />
+    <div className="min-h-screen">
+      <Header userName={user.displayName || user.email} products={products} />
 
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
-        {/* Dashboard */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-24">
         <section className="mb-8">
           <Dashboard products={products} />
         </section>
 
-        {/* Products List */}
-        <section className="mb-8">
-          <ProductList
-            products={products}
-            userId={user.id}
-            onDelete={deleteProductData}
-          />
+        <section>
+          <ProductList products={products} userId={user.id} onDelete={deleteProductData} />
         </section>
 
-        {/* Empty State */}
         {products.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">まだ商品が登録されていません</p>
-            <p className="text-gray-500 text-sm mt-2">
-              右下の「+」ボタンから商品を追加してください
-            </p>
+          <div className="glass-panel text-center py-10 mt-8">
+            <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
+            <p className="text-soft text-sm mt-2">右下のボタンから最初の商品を登録してください</p>
           </div>
         )}
       </main>
 
-      {/* Floating Add Button */}
       <button
         onClick={() => setShowAddForm(true)}
-        className="fixed bottom-8 right-8 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition transform hover:scale-110 active:scale-95 flex items-center justify-center"
+        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
         title="商品を追加"
       >
-        <Plus className="w-8 h-8" />
+        <Plus className="w-7 h-7" />
       </button>
 
-      {/* Add Product Form */}
-      {showAddForm && (
-        <AddProductForm
-          userId={user.id}
-          onClose={() => setShowAddForm(false)}
-        />
-      )}
+      {showAddForm && <AddProductForm userId={user.id} onClose={() => setShowAddForm(false)} />}
     </div>
   );
 }
