@@ -14,6 +14,18 @@ export function LoginForm({ onSuccess }: LoginProps) {
   const [info, setInfo] = useState('');
   const { login, register, resetPassword, authLoading } = useAuth();
 
+  const toJaError = (err: unknown) => {
+    const message = err instanceof Error ? err.message : '';
+    if (message.includes('auth/invalid-credential')) return 'メールアドレスまたはパスワードが違います';
+    if (message.includes('auth/user-not-found')) return 'ユーザーが見つかりません';
+    if (message.includes('auth/wrong-password')) return 'パスワードが違います';
+    if (message.includes('auth/too-many-requests')) return '試行回数が多すぎます。少し待ってからお試しください';
+    if (message.includes('auth/invalid-email')) return 'メールアドレスの形式が正しくありません';
+    if (message.includes('auth/email-already-in-use')) return 'このメールアドレスはすでに使われています';
+    if (message.includes('auth/weak-password')) return 'パスワードは6文字以上にしてください';
+    return message || '認証に失敗しました';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -27,7 +39,7 @@ export function LoginForm({ onSuccess }: LoginProps) {
       }
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      setError(toJaError(err));
     }
   };
 
@@ -44,7 +56,7 @@ export function LoginForm({ onSuccess }: LoginProps) {
       await resetPassword(email);
       setInfo('パスワード再設定メールを送信しました');
     } catch (err) {
-      setError(err instanceof Error ? err.message : '送信に失敗しました');
+      setError(toJaError(err));
     }
   };
 
