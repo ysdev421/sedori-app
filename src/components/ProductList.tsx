@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { CircleDollarSign, Edit, Trash2 } from 'lucide-react';
+﻿import { useMemo, useState } from 'react';
+import { CircleDollarSign, Edit, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { SaleForm } from './SaleForm';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate } from '@/lib/utils';
@@ -11,13 +11,48 @@ interface ProductListProps {
   onDelete: (id: string) => void;
 }
 
+type StatusFilter = 'all' | 'pending' | 'inventory' | 'sold';
+type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
+
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const pending = products.filter((p) => p.status === 'pending');
-  const sold = products.filter((p) => p.status === 'sold');
-  const inventory = products.filter((p) => p.status === 'inventory');
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('purchaseDateDesc');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    const list = products.filter((p) => {
+      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+
+      if (fromDate && p.purchaseDate < fromDate) return false;
+      if (toDate && p.purchaseDate > toDate) return false;
+
+      if (!q) return true;
+      const haystack = [p.productName, p.purchaseLocation, p.saleLocation || '', p.channel || ''].join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+
+    return list.sort((a, b) => {
+      if (sortKey === 'profitDesc') {
+        return calculateProfit(b) - calculateProfit(a);
+      }
+      if (sortKey === 'salePriceDesc') {
+        return (b.salePrice || 0) - (a.salePrice || 0);
+      }
+      return b.purchaseDate.localeCompare(a.purchaseDate);
+    });
+  }, [products, query, statusFilter, fromDate, toDate, sortKey]);
+
+  const pending = filtered.filter((p) => p.status === 'pending');
+  const sold = filtered.filter((p) => p.status === 'sold');
+  const inventory = filtered.filter((p) => p.status === 'inventory');
 
   const statusBadge = (status: Product['status']) => {
     if (status === 'sold') return 'bg-emerald-100 text-emerald-700';
@@ -135,10 +170,55 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   );
 
   return (
-    <div className="space-y-7">
-      {section('待機中', 'bg-slate-100 text-slate-700', pending)}
-      {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
-      {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
+    <div className="space-y-4">
+      <div className="glass-panel p-3 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="商品名・購入場所・売却先で検索"
+              className="input-field pl-9"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-white/80 transition inline-flex items-center gap-2"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            条件
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
+              <option value="all">ステータス: すべて</option>
+              <option value="sold">売却済み</option>
+              <option value="inventory">在庫</option>
+              <option value="pending">待機中</option>
+            </select>
+
+            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-field" />
+            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-field" />
+
+            <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="input-field">
+              <option value="purchaseDateDesc">並び順: 購入日が新しい順</option>
+              <option value="profitDesc">並び順: 利益が高い順</option>
+              <option value="salePriceDesc">並び順: 売却価格が高い順</option>
+            </select>
+          </div>
+        )}
+      </div>
+
+      <div className="text-xs text-soft px-1">検索結果 {filtered.length} 件</div>
+
+      <div className="space-y-7">
+        {section('待機中', 'bg-slate-100 text-slate-700', pending)}
+        {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
+        {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
+      </div>
 
       {selectedProduct && (
         <SaleForm product={selectedProduct} userId={userId} onClose={() => setSelectedProduct(null)} />
