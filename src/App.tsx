@@ -164,11 +164,11 @@ function App() {
         <Plus className="w-7 h-7" />
       </button>
 
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
-        <div className="glass-panel p-1.5 flex items-center gap-1">
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94vw] max-w-md">
+        <div className="glass-panel p-1.5 flex items-center gap-1 flex-nowrap">
           <button
             onClick={() => setScreen('summary')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
               screen === 'summary' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
             }`}
           >
@@ -177,7 +177,7 @@ function App() {
           </button>
           <button
             onClick={() => setScreen('list')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
               screen === 'list' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
             }`}
           >
@@ -186,12 +186,12 @@ function App() {
           </button>
           <button
             onClick={() => setScreen('sale')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
               screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
             }`}
           >
             <Truck className="w-4 h-4" />
-            売却管理
+            売却
           </button>
         </div>
       </nav>
