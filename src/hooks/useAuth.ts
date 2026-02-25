@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  updatePassword,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -64,11 +65,19 @@ export function useAuth() {
     await sendPasswordResetEmail(auth, email);
   };
 
+  const changePassword = async (newPassword: string) => {
+    if (!auth.currentUser) {
+      throw new Error('ログインが必要です');
+    }
+    await updatePassword(auth.currentUser, newPassword);
+  };
+
   return {
     login,
     register,
     logout,
     resetPassword,
+    changePassword,
     authLoading,
   };
 }
