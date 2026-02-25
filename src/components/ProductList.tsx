@@ -132,11 +132,16 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-slate-900 truncate">{product.productName}</h3>
-          <p className="text-xs text-soft mt-0.5">
-            {formatDate(product.purchaseDate)} / {product.purchaseLocation}
-          </p>
 
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <p className="text-slate-800 whitespace-nowrap">
+              <span className="text-xs text-soft mr-1">購入日</span>
+              <span className="font-semibold">{formatDate(product.purchaseDate)}</span>
+            </p>
+            <p className="text-slate-800 whitespace-nowrap">
+              <span className="text-xs text-soft mr-1">場所</span>
+              <span className="font-semibold">{product.purchaseLocation}</span>
+            </p>
             <p className="text-slate-800 whitespace-nowrap">
               <span className="text-xs text-soft mr-1">購入</span>
               <span className="font-semibold">{formatCurrency(product.purchasePrice)}</span>
