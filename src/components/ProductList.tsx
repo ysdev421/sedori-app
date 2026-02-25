@@ -131,28 +131,28 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     <div key={product.id} className="card p-3 animate-fade-in">
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm text-slate-900 truncate">{product.productName}</h3>
-          <p className="text-[11px] text-soft mt-0.5">
+          <h3 className="font-semibold text-slate-900 truncate">{product.productName}</h3>
+          <p className="text-xs text-soft mt-0.5">
             {formatDate(product.purchaseDate)} / {product.purchaseLocation}
           </p>
 
-          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+          <div className="mt-1.5 grid grid-cols-2 gap-2 text-sm">
             <div>
-              <p className="text-[11px] text-soft">購入価格</p>
-              <p className="font-semibold text-slate-900 text-xs">{formatCurrency(product.purchasePrice)}</p>
+              <p className="text-xs text-soft">購入価格</p>
+              <p className="font-semibold text-slate-900">{formatCurrency(product.purchasePrice)}</p>
             </div>
             <div>
-              <p className="text-[11px] text-soft">ポイント</p>
-              <p className="font-semibold text-slate-900 text-xs">-{formatCurrency(product.point)}</p>
+              <p className="text-xs text-soft">ポイント</p>
+              <p className="font-semibold text-slate-900">-{formatCurrency(product.point)}</p>
             </div>
           </div>
 
-          <div className="mt-2">
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusBadge(product.status)}`}>
+          <div className="mt-1.5">
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
               {statusLabel(product.status)}
             </span>
             <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ml-1.5 ${channelLabel(product.channel).cls}`}
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ml-1.5 ${channelLabel(product.channel).cls}`}
             >
               {channelLabel(product.channel).text}
             </span>
@@ -189,23 +189,14 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       </div>
 
       {product.status === 'sold' && product.salePrice && (
-        <div className="mt-3 pt-3 border-t border-white/60 grid grid-cols-3 gap-2 text-xs">
-          <div>
-            <p className="text-[11px] text-soft">売却価格</p>
-            <p className="font-semibold text-slate-900 text-xs">{formatCurrency(product.salePrice)}</p>
-          </div>
-          <div>
-            <p className="text-[11px] text-soft">利益</p>
-            <p className={`font-semibold text-xs ${calculateProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-              {formatCurrency(calculateProfit(product))}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-soft">P利益</p>
-            <p className={`font-semibold text-xs ${calculatePointProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-              {formatCurrency(calculatePointProfit(product))}
-            </p>
-          </div>
+        <div className="mt-2 pt-2 border-t border-white/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="text-soft">売却 {formatCurrency(product.salePrice)}</span>
+          <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
+            利益 {formatCurrency(calculateProfit(product))}
+          </span>
+          <span className={calculatePointProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
+            P利益 {formatCurrency(calculatePointProfit(product))}
+          </span>
         </div>
       )}
     </div>
