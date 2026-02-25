@@ -128,81 +128,81 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   };
 
   const renderProductCard = (product: Product) => (
-    <div key={product.id} className="card p-4 animate-fade-in">
+    <div key={product.id} className="card p-3 animate-fade-in">
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-slate-900 truncate">{product.productName}</h3>
-          <p className="text-xs text-soft mt-1">
+          <h3 className="font-semibold text-sm text-slate-900 truncate">{product.productName}</h3>
+          <p className="text-[11px] text-soft mt-0.5">
             {formatDate(product.purchaseDate)} / {product.purchaseLocation}
           </p>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
             <div>
-              <p className="text-xs text-soft">購入価格</p>
-              <p className="font-semibold text-slate-900">{formatCurrency(product.purchasePrice)}</p>
+              <p className="text-[11px] text-soft">購入価格</p>
+              <p className="font-semibold text-slate-900 text-xs">{formatCurrency(product.purchasePrice)}</p>
             </div>
             <div>
-              <p className="text-xs text-soft">ポイント</p>
-              <p className="font-semibold text-slate-900">-{formatCurrency(product.point)}</p>
+              <p className="text-[11px] text-soft">ポイント</p>
+              <p className="font-semibold text-slate-900 text-xs">-{formatCurrency(product.point)}</p>
             </div>
           </div>
 
-          <div className="mt-3">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(product.status)}`}>
+          <div className="mt-2">
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusBadge(product.status)}`}>
               {statusLabel(product.status)}
             </span>
             <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ml-2 ${channelLabel(product.channel).cls}`}
+              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ml-1.5 ${channelLabel(product.channel).cls}`}
             >
               {channelLabel(product.channel).text}
             </span>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             onClick={() => setEditingProduct(product)}
-            className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition"
+            className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
             title="編集"
           >
-            <Edit className="w-5 h-5" />
+            <Edit className="w-4 h-4" />
           </button>
 
           {product.status !== 'sold' && (
             <button
               onClick={() => setSelectedProduct(product)}
-              className="p-2 rounded-xl text-sky-600 hover:bg-sky-50 transition"
+              className="p-1.5 rounded-lg text-sky-600 hover:bg-sky-50 transition"
               title="売却情報を入力"
             >
-              <CircleDollarSign className="w-5 h-5" />
+              <CircleDollarSign className="w-4 h-4" />
             </button>
           )}
 
           <button
             onClick={() => onDelete(product.id)}
-            className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition"
+            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition"
             title="削除"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {product.status === 'sold' && product.salePrice && (
-        <div className="mt-4 pt-4 border-t border-white/60 grid grid-cols-3 gap-3 text-sm">
+        <div className="mt-3 pt-3 border-t border-white/60 grid grid-cols-3 gap-2 text-xs">
           <div>
-            <p className="text-xs text-soft">売却価格</p>
-            <p className="font-semibold text-slate-900">{formatCurrency(product.salePrice)}</p>
+            <p className="text-[11px] text-soft">売却価格</p>
+            <p className="font-semibold text-slate-900 text-xs">{formatCurrency(product.salePrice)}</p>
           </div>
           <div>
-            <p className="text-xs text-soft">利益</p>
-            <p className={`font-semibold ${calculateProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+            <p className="text-[11px] text-soft">利益</p>
+            <p className={`font-semibold text-xs ${calculateProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
               {formatCurrency(calculateProfit(product))}
             </p>
           </div>
           <div>
-            <p className="text-xs text-soft">P利益</p>
-            <p className={`font-semibold ${calculatePointProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+            <p className="text-[11px] text-soft">P利益</p>
+            <p className={`font-semibold text-xs ${calculatePointProfit(product) >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
               {formatCurrency(calculatePointProfit(product))}
             </p>
           </div>
