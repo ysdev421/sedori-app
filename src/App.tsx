@@ -191,7 +191,7 @@ function App() {
             }`}
           >
             <Truck className="w-4 h-4" />
-            売却
+            一括売却
           </button>
         </div>
       </nav>
