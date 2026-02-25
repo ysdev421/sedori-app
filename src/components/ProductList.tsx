@@ -111,7 +111,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const channelLabel = (channel?: Product['channel']) => {
     if (channel === 'ebay') return { text: 'eBay', cls: 'bg-indigo-100 text-indigo-700' };
     if (channel === 'kaitori') return { text: '買取流し', cls: 'bg-purple-100 text-purple-700' };
-    return { text: '未分類', cls: 'bg-slate-100 text-slate-700' };
+    return null;
   };
 
   const section = (title: string, color: string, items: Product[]) => {
@@ -128,43 +128,16 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   };
 
   const renderProductCard = (product: Product) => (
-    <div key={product.id} className="card p-3 animate-fade-in">
+    <div key={product.id} className="card p-3 animate-fade-in space-y-2.5">
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-slate-900 truncate">{product.productName}</h3>
-
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-sm">
-            <p className="text-slate-800 whitespace-nowrap">
-              <span className="text-xs text-soft mr-1">購入日</span>
-              <span className="font-semibold">{formatDate(product.purchaseDate)}</span>
-            </p>
-            <p className="text-slate-800 whitespace-nowrap">
-              <span className="text-xs text-soft mr-1">場所</span>
-              <span className="font-semibold">{product.purchaseLocation}</span>
-            </p>
-            <p className="text-slate-800 whitespace-nowrap">
-              <span className="text-xs text-soft mr-1">購入</span>
-              <span className="font-semibold">{formatCurrency(product.purchasePrice)}</span>
-            </p>
-            <p className="text-slate-800 whitespace-nowrap">
-              <span className="text-xs text-soft mr-1">P</span>
-              <span className="font-semibold">-{formatCurrency(product.point)}</span>
-            </p>
-          </div>
-
-          <div className="mt-1.5">
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
-              {statusLabel(product.status)}
-            </span>
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ml-1.5 ${channelLabel(product.channel).cls}`}
-            >
-              {channelLabel(product.channel).text}
-            </span>
-          </div>
+          <p className="text-xs text-soft mt-0.5">
+            {formatDate(product.purchaseDate)} / {product.purchaseLocation}
+          </p>
         </div>
 
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           <button
             onClick={() => setEditingProduct(product)}
             className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
@@ -193,8 +166,31 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         </div>
       </div>
 
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+          <p className="text-slate-800 whitespace-nowrap">
+            <span className="text-xs text-soft mr-1">購入</span>
+            <span className="font-semibold">{formatCurrency(product.purchasePrice)}</span>
+          </p>
+          <p className="text-slate-800 whitespace-nowrap">
+            <span className="text-xs text-soft mr-1">P</span>
+            <span className="font-semibold">-{formatCurrency(product.point)}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
+            {statusLabel(product.status)}
+          </span>
+          {channelLabel(product.channel) && (
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${channelLabel(product.channel)?.cls}`}>
+              {channelLabel(product.channel)?.text}
+            </span>
+          )}
+        </div>
+      </div>
+
       {product.status === 'sold' && product.salePrice && (
-        <div className="mt-2 pt-2 border-t border-white/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <div className="pt-2 border-t border-white/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="text-soft">売却 {formatCurrency(product.salePrice)}</span>
           <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
             利益 {formatCurrency(calculateProfit(product))}
@@ -208,7 +204,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="glass-panel p-3 space-y-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -258,7 +254,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
 
       <div className="text-xs text-soft px-1">検索結果 {filtered.length} 件</div>
 
-      <div className="space-y-7">
+      <div className="space-y-6">
         {section('待機中', 'bg-slate-100 text-slate-700', pending)}
         {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
         {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
