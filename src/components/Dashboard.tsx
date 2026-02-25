@@ -1,24 +1,76 @@
 ﻿import { DollarSign, Package, TrendingUp } from 'lucide-react';
-import { calculateProfitSummary, formatCurrency } from '@/lib/utils';
+import { calculateProfit, calculateProfitSummary, formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
 
 interface DashboardProps {
   products: Product[];
 }
 
+function getMonthKey(dateString?: string): string | null {
+  if (!dateString) return null;
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function calcMoM(products: Product[]) {
+  const sold = products.filter((p) => p.status === 'sold' && p.saleDate);
+  const monthKeys = Array.from(new Set(sold.map((p) => getMonthKey(p.saleDate)).filter(Boolean))).sort();
+  const current = monthKeys[monthKeys.length - 1];
+  const prev = monthKeys[monthKeys.length - 2];
+
+  if (!current || !prev) {
+    return { revenue: null as number | null, profit: null as number | null };
+  }
+
+  const sumByMonth = (monthKey: string) => {
+    const target = sold.filter((p) => getMonthKey(p.saleDate) === monthKey);
+    return {
+      revenue: target.reduce((sum, p) => sum + (p.salePrice || 0), 0),
+      profit: target.reduce((sum, p) => sum + calculateProfit(p), 0),
+    };
+  };
+
+  const cur = sumByMonth(current);
+  const prv = sumByMonth(prev);
+
+  const calc = (currentVal: number, prevVal: number) => {
+    if (prevVal === 0) return null;
+    return ((currentVal - prevVal) / Math.abs(prevVal)) * 100;
+  };
+
+  return {
+    revenue: calc(cur.revenue, prv.revenue),
+    profit: calc(cur.profit, prv.profit),
+  };
+}
+
+function momText(value: number | null) {
+  if (value === null) return '前月比 -';
+  const sign = value >= 0 ? '+' : '';
+  return `前月比 ${sign}${value.toFixed(1)}%`;
+}
+
 export function Dashboard({ products }: DashboardProps) {
   const summary = calculateProfitSummary(products);
+  const mom = calcMoM(products);
 
   const stats = [
     {
       label: '総売上',
       value: formatCurrency(summary.totalRevenue),
+      sub: momText(mom.revenue),
+      subTone: mom.revenue === null ? 'text-slate-500' : mom.revenue >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: DollarSign,
       tone: 'from-sky-100 to-cyan-100 text-sky-700',
     },
     {
       label: '総利益',
       value: formatCurrency(summary.totalProfit),
+      sub: momText(mom.profit),
+      subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: TrendingUp,
       tone: 'from-emerald-100 to-green-100 text-emerald-700',
       negative: summary.totalProfit < 0,
@@ -49,6 +101,7 @@ export function Dashboard({ products }: DashboardProps) {
               </div>
               <p className="text-xs text-soft font-semibold tracking-wide">{stat.label}</p>
               <p className={`text-2xl font-black mt-1 ${stat.negative ? 'text-rose-600' : 'text-slate-900'}`}>{stat.value}</p>
+              {stat.sub && <p className={`text-xs mt-1 font-semibold ${stat.subTone}`}>{stat.sub}</p>}
             </div>
           );
         })}
