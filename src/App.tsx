@@ -19,6 +19,8 @@ function App() {
   const filteredProducts =
     channelFilter === 'all'
       ? products
+      : channelFilter === 'ebay'
+      ? products.filter((p) => p.channel === 'ebay' || !p.channel)
       : products.filter((p) => p.channel === channelFilter);
 
   if (authLoading) {
