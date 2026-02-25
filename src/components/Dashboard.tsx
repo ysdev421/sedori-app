@@ -1,4 +1,5 @@
-﻿import { DollarSign, Package, TrendingUp } from 'lucide-react';
+﻿import { useState } from 'react';
+import { DollarSign, Package, TrendingUp } from 'lucide-react';
 import { calculateProfit, calculateProfitSummary, formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -74,14 +75,13 @@ function momText(value: number | null) {
 }
 
 export function Dashboard({ products }: DashboardProps) {
+  const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'pointProfit'>('revenue');
+
   const summary = calculateProfitSummary(products);
   const mom = calcMoM(products);
   const monthly = buildMonthlySeries(products);
   const maxRevenue = Math.max(1, ...monthly.map((m) => m.revenue));
-  const maxProfitAbs = Math.max(
-    1,
-    ...monthly.map((m) => Math.max(Math.abs(m.profit), Math.abs(m.pointProfit)))
-  );
+  const maxProfitAbs = Math.max(1, ...monthly.map((m) => Math.max(Math.abs(m.profit), Math.abs(m.pointProfit))));
 
   const stats = [
     {
@@ -135,42 +135,46 @@ export function Dashboard({ products }: DashboardProps) {
 
       <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-slate-800">月次グラフ（売上 / 利益 / P利益）</h3>
+          <h3 className="font-bold text-slate-800">月次グラフ</h3>
           <p className="text-xs text-soft">直近6か月</p>
         </div>
+
+        <div className="glass-panel p-1 mb-3 inline-flex gap-1">
+          <button onClick={() => setChartMetric('revenue')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'revenue' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>売上</button>
+          <button onClick={() => setChartMetric('profit')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'profit' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>利益</button>
+          <button onClick={() => setChartMetric('pointProfit')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'pointProfit' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>P利益</button>
+        </div>
+
         {monthly.length === 0 ? (
           <p className="text-sm text-soft">売却データがありません</p>
         ) : (
-          <div>
-            <div className="flex items-center gap-3 text-xs mb-3">
-              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-cyan-500"></span>売上</span>
-              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>利益</span>
-              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-500"></span>P利益</span>
-            </div>
-            <div className="grid grid-cols-6 gap-2 items-end h-48">
-            {monthly.map((m) => (
-              <div key={m.month} className="flex flex-col items-center justify-end h-full">
-                <div className="w-full h-full flex items-end gap-1">
-                  <div
-                    className="flex-1 rounded-t-md bg-gradient-to-t from-sky-500 to-cyan-400"
-                    style={{ height: `${Math.max(8, (m.revenue / maxRevenue) * 100)}%` }}
-                    title={`${m.month} 売上: ${formatCurrency(m.revenue)}`}
-                  />
-                  <div
-                    className={`flex-1 rounded-t-md ${m.profit >= 0 ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-rose-500 to-rose-400'}`}
-                    style={{ height: `${Math.max(8, (Math.abs(m.profit) / maxProfitAbs) * 100)}%` }}
-                    title={`${m.month} 利益: ${formatCurrency(m.profit)}`}
-                  />
-                  <div
-                    className={`flex-1 rounded-t-md ${m.pointProfit >= 0 ? 'bg-gradient-to-t from-indigo-500 to-indigo-400' : 'bg-gradient-to-t from-rose-500 to-rose-400'}`}
-                    style={{ height: `${Math.max(8, (Math.abs(m.pointProfit) / maxProfitAbs) * 100)}%` }}
-                    title={`${m.month} P利益: ${formatCurrency(m.pointProfit)}`}
-                  />
+          <div className="grid grid-cols-6 gap-2 items-end h-48">
+            {monthly.map((m) => {
+              const value = chartMetric === 'revenue' ? m.revenue : chartMetric === 'profit' ? m.profit : m.pointProfit;
+              const max = chartMetric === 'revenue' ? maxRevenue : maxProfitAbs;
+              const positive = value >= 0;
+              const barClass =
+                chartMetric === 'revenue'
+                  ? 'bg-gradient-to-t from-sky-500 to-cyan-400'
+                  : positive
+                  ? chartMetric === 'profit'
+                    ? 'bg-gradient-to-t from-emerald-500 to-emerald-400'
+                    : 'bg-gradient-to-t from-indigo-500 to-indigo-400'
+                  : 'bg-gradient-to-t from-rose-500 to-rose-400';
+
+              return (
+                <div key={m.month} className="flex flex-col items-center justify-end h-full">
+                  <div className="w-full h-full flex items-end">
+                    <div
+                      className={`w-full rounded-t-md ${barClass}`}
+                      style={{ height: `${Math.max(8, (Math.abs(value) / max) * 100)}%` }}
+                      title={`${m.month} ${chartMetric === 'revenue' ? '売上' : chartMetric === 'profit' ? '利益' : 'P利益'}: ${formatCurrency(value)}`}
+                    />
+                  </div>
+                  <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
                 </div>
-                <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
-              </div>
-            ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
