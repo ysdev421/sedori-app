@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -59,10 +60,15 @@ export function useAuth() {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   return {
     login,
     register,
     logout,
+    resetPassword,
     authLoading,
   };
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { LogIn, Mail, Lock, Loader } from 'lucide-react';
+﻿import { useState } from 'react';
+import { Loader, Lock, LogIn, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface LoginProps {
@@ -11,11 +11,13 @@ export function LoginForm({ onSuccess }: LoginProps) {
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
-  const { login, register, authLoading } = useAuth();
+  const [info, setInfo] = useState('');
+  const { login, register, resetPassword, authLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
 
     try {
       if (isLogin) {
@@ -29,30 +31,40 @@ export function LoginForm({ onSuccess }: LoginProps) {
     }
   };
 
+  const handleResetPassword = async () => {
+    setError('');
+    setInfo('');
+
+    if (!email) {
+      setError('先にメールアドレスを入力してください');
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      setInfo('パスワード再設定メールを送信しました');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '送信に失敗しました');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-          {/* Header */}
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-4">
               <div className="bg-gradient-to-br from-sky-500 to-blue-600 p-3 rounded-lg">
                 <LogIn className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              せどり利益管理
-            </h1>
-            <p className="text-gray-600">スマートフォンで簡単管理</p>
+            <h1 className="text-3xl font-bold text-gray-900">せどり利益管理</h1>
+            <p className="text-gray-600">スマホで簡単に利益管理</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
@@ -66,11 +78,8 @@ export function LoginForm({ onSuccess }: LoginProps) {
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                パスワード
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
@@ -84,14 +93,9 @@ export function LoginForm({ onSuccess }: LoginProps) {
               </div>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+            {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
+            {info && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg text-sm">{info}</div>}
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={authLoading}
@@ -102,16 +106,27 @@ export function LoginForm({ onSuccess }: LoginProps) {
             </button>
           </form>
 
-          {/* Toggle */}
-          <div className="text-center">
+          <div className="space-y-2 text-center">
+            {isLogin && (
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                className="text-sm text-slate-600 hover:text-sky-700 transition"
+              >
+                パスワードを忘れた場合
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+                setInfo('');
+              }}
               className="text-sky-600 hover:text-sky-700 font-medium text-sm transition"
             >
-              {isLogin
-                ? 'アカウントを持っていませんか？登録する'
-                : 'ログインする'}
+              {isLogin ? 'アカウントを持っていませんか？登録する' : 'ログインする'}
             </button>
           </div>
         </div>
