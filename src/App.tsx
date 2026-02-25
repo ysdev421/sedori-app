@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { BarChart3, List, Plus } from 'lucide-react';
+import { BarChart3, List, Plus, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -8,13 +8,14 @@ import { Header } from '@/components/Header';
 import { Dashboard } from '@/components/Dashboard';
 import { ProductList } from '@/components/ProductList';
 import { AddProductForm } from '@/components/AddProductForm';
+import { SaleBatchManager } from '@/components/SaleBatchManager';
 
 function App() {
   const { authLoading } = useAuth();
   const user = useStore((state) => state.user);
   const { products, deleteProductData } = useProducts(user?.id || null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [screen, setScreen] = useState<'summary' | 'list'>('summary');
+  const [screen, setScreen] = useState<'summary' | 'list' | 'sale'>('summary');
   const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
 
@@ -137,13 +138,17 @@ function App() {
             </div>
             <Dashboard products={summaryProducts} />
           </section>
-        ) : (
+        ) : screen === 'list' ? (
           <section>
             <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
           </section>
+        ) : (
+          <section>
+            <SaleBatchManager products={filteredProducts} userId={user.id} />
+          </section>
         )}
 
-        {filteredProducts.length === 0 && (
+      {screen !== 'sale' && filteredProducts.length === 0 && (
           <div className="glass-panel text-center py-10 mt-8">
             <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
             <p className="text-soft text-sm mt-2">右下のボタンから最初の商品を登録してください</p>
@@ -178,6 +183,15 @@ function App() {
           >
             <List className="w-4 h-4" />
             一覧
+          </button>
+          <button
+            onClick={() => setScreen('sale')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+              screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            売却管理
           </button>
         </div>
       </nav>
