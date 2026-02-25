@@ -13,6 +13,7 @@ interface ProductListProps {
 
 type StatusFilter = 'all' | 'pending' | 'inventory' | 'sold';
 type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
+type PeriodPreset = 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -27,6 +28,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [fromDate, setFromDate] = useState(fmt(currentMonthStart));
   const [toDate, setToDate] = useState(fmt(new Date(nextMonthStart.getTime() - 1)));
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('thisMonth');
   const [sortKey, setSortKey] = useState<SortKey>('purchaseDateDesc');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -58,6 +60,37 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       return b.purchaseDate.localeCompare(a.purchaseDate);
     });
   }, [products, query, statusFilter, fromDate, toDate, sortKey]);
+
+  const applyPeriodPreset = (preset: PeriodPreset) => {
+    setPeriodPreset(preset);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+
+    if (preset === 'all') {
+      setFromDate('');
+      setToDate('');
+      return;
+    }
+    if (preset === 'thisYear') {
+      setFromDate(`${y}-01-01`);
+      setToDate(`${y}-12-31`);
+      return;
+    }
+    if (preset === 'thisMonth') {
+      const start = new Date(y, m, 1);
+      const end = new Date(y, m + 1, 0);
+      setFromDate(fmt(start));
+      setToDate(fmt(end));
+      return;
+    }
+    if (preset === 'lastMonth') {
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0);
+      setFromDate(fmt(start));
+      setToDate(fmt(end));
+    }
+  };
 
   const pending = filtered.filter((p) => p.status === 'pending');
   const sold = filtered.filter((p) => p.status === 'sold');
@@ -202,6 +235,12 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
 
         {showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="lg:col-span-4 flex flex-wrap gap-1">
+              <button onClick={() => applyPeriodPreset('thisMonth')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'thisMonth' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>今月</button>
+              <button onClick={() => applyPeriodPreset('lastMonth')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'lastMonth' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>先月</button>
+              <button onClick={() => applyPeriodPreset('thisYear')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'thisYear' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>今年</button>
+              <button onClick={() => applyPeriodPreset('all')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>全期間</button>
+            </div>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
               <option value="all">ステータス: すべて</option>
               <option value="pending">未着/待機+在庫</option>
@@ -209,8 +248,8 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
               <option value="inventory">在庫のみ</option>
             </select>
 
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-field" />
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-field" />
+            <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+            <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
 
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="input-field">
               <option value="purchaseDateDesc">並び順: 購入日が新しい順</option>
