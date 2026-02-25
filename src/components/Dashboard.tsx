@@ -49,14 +49,15 @@ function calcMoM(products: Product[]) {
 
 function buildMonthlySeries(products: Product[]) {
   const sold = products.filter((p) => p.status === 'sold' && p.saleDate);
-  const monthMap = new Map<string, { revenue: number; profit: number }>();
+  const monthMap = new Map<string, { revenue: number; profit: number; pointProfit: number }>();
 
   for (const p of sold) {
     const key = getMonthKey(p.saleDate);
     if (!key) continue;
-    const cur = monthMap.get(key) || { revenue: 0, profit: 0 };
+    const cur = monthMap.get(key) || { revenue: 0, profit: 0, pointProfit: 0 };
     cur.revenue += p.salePrice || 0;
     cur.profit += calculateProfit(p);
+    cur.pointProfit += (p.salePrice || 0) - p.purchasePrice;
     monthMap.set(key, cur);
   }
 
@@ -77,6 +78,10 @@ export function Dashboard({ products }: DashboardProps) {
   const mom = calcMoM(products);
   const monthly = buildMonthlySeries(products);
   const maxRevenue = Math.max(1, ...monthly.map((m) => m.revenue));
+  const maxProfitAbs = Math.max(
+    1,
+    ...monthly.map((m) => Math.max(Math.abs(m.profit), Math.abs(m.pointProfit)))
+  );
 
   const stats = [
     {
@@ -130,24 +135,42 @@ export function Dashboard({ products }: DashboardProps) {
 
       <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-slate-800">月次グラフ（売上）</h3>
+          <h3 className="font-bold text-slate-800">月次グラフ（売上 / 利益 / P利益）</h3>
           <p className="text-xs text-soft">直近6か月</p>
         </div>
         {monthly.length === 0 ? (
           <p className="text-sm text-soft">売却データがありません</p>
         ) : (
-          <div className="grid grid-cols-6 gap-2 items-end h-40">
+          <div>
+            <div className="flex items-center gap-3 text-xs mb-3">
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-cyan-500"></span>売上</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span>利益</span>
+              <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-500"></span>P利益</span>
+            </div>
+            <div className="grid grid-cols-6 gap-2 items-end h-48">
             {monthly.map((m) => (
               <div key={m.month} className="flex flex-col items-center justify-end h-full">
-                <div className="text-[10px] text-soft mb-1">{Math.round((m.revenue / maxRevenue) * 100)}%</div>
-                <div
-                  className="w-full rounded-t-md bg-gradient-to-t from-sky-500 to-cyan-400"
-                  style={{ height: `${Math.max(8, (m.revenue / maxRevenue) * 100)}%` }}
-                  title={`${m.month} 売上: ${formatCurrency(m.revenue)} / 利益: ${formatCurrency(m.profit)}`}
-                />
+                <div className="w-full h-full flex items-end gap-1">
+                  <div
+                    className="flex-1 rounded-t-md bg-gradient-to-t from-sky-500 to-cyan-400"
+                    style={{ height: `${Math.max(8, (m.revenue / maxRevenue) * 100)}%` }}
+                    title={`${m.month} 売上: ${formatCurrency(m.revenue)}`}
+                  />
+                  <div
+                    className={`flex-1 rounded-t-md ${m.profit >= 0 ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-rose-500 to-rose-400'}`}
+                    style={{ height: `${Math.max(8, (Math.abs(m.profit) / maxProfitAbs) * 100)}%` }}
+                    title={`${m.month} 利益: ${formatCurrency(m.profit)}`}
+                  />
+                  <div
+                    className={`flex-1 rounded-t-md ${m.pointProfit >= 0 ? 'bg-gradient-to-t from-indigo-500 to-indigo-400' : 'bg-gradient-to-t from-rose-500 to-rose-400'}`}
+                    style={{ height: `${Math.max(8, (Math.abs(m.pointProfit) / maxProfitAbs) * 100)}%` }}
+                    title={`${m.month} P利益: ${formatCurrency(m.pointProfit)}`}
+                  />
+                </div>
                 <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
               </div>
             ))}
+            </div>
           </div>
         )}
       </div>
