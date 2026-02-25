@@ -14,6 +14,12 @@ function App() {
   const user = useStore((state) => state.user);
   const { products, deleteProductData } = useProducts(user?.id || null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
+
+  const filteredProducts =
+    channelFilter === 'all'
+      ? products
+      : products.filter((p) => p.channel === channelFilter);
 
   if (authLoading) {
     return (
@@ -36,14 +42,43 @@ function App() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-24">
         <section className="mb-8">
-          <Dashboard products={products} />
+          <Dashboard products={filteredProducts} />
+        </section>
+
+        <section className="mb-5">
+          <div className="glass-panel p-2 inline-flex gap-1">
+            <button
+              onClick={() => setChannelFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                channelFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+              }`}
+            >
+              全体
+            </button>
+            <button
+              onClick={() => setChannelFilter('ebay')}
+              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                channelFilter === 'ebay' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+              }`}
+            >
+              eBay
+            </button>
+            <button
+              onClick={() => setChannelFilter('kaitori')}
+              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                channelFilter === 'kaitori' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+              }`}
+            >
+              買取流し
+            </button>
+          </div>
         </section>
 
         <section>
-          <ProductList products={products} userId={user.id} onDelete={deleteProductData} />
+          <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
         </section>
 
-        {products.length === 0 && (
+        {filteredProducts.length === 0 && (
           <div className="glass-panel text-center py-10 mt-8">
             <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
             <p className="text-soft text-sm mt-2">右下のボタンから最初の商品を登録してください</p>

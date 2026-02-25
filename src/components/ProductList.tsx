@@ -29,6 +29,12 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     return '待機中';
   };
 
+  const channelLabel = (channel?: Product['channel']) => {
+    if (channel === 'ebay') return { text: 'eBay', cls: 'bg-indigo-100 text-indigo-700' };
+    if (channel === 'kaitori') return { text: '買取流し', cls: 'bg-purple-100 text-purple-700' };
+    return { text: '未分類', cls: 'bg-slate-100 text-slate-700' };
+  };
+
   const section = (title: string, color: string, items: Product[]) => {
     if (items.length === 0) return null;
 
@@ -65,6 +71,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
           <div className="mt-3">
             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(product.status)}`}>
               {statusLabel(product.status)}
+            </span>
+            <span
+              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ml-2 ${channelLabel(product.channel).cls}`}
+            >
+              {channelLabel(product.channel).text}
             </span>
           </div>
         </div>
