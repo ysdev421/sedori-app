@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { BarChart3, List, Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -14,6 +14,7 @@ function App() {
   const user = useStore((state) => state.user);
   const { products, deleteProductData } = useProducts(user?.id || null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [screen, setScreen] = useState<'summary' | 'list'>('summary');
   const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
 
   const filteredProducts =
@@ -42,12 +43,8 @@ function App() {
     <div className="min-h-screen">
       <Header userName={user.displayName || user.email} products={products} />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-24">
-        <section className="mb-8">
-          <Dashboard products={filteredProducts} />
-        </section>
-
-        <section className="mb-5">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28">
+        <section className="mb-6">
           <div className="glass-panel p-2 inline-flex gap-1">
             <button
               onClick={() => setChannelFilter('all')}
@@ -76,9 +73,15 @@ function App() {
           </div>
         </section>
 
-        <section>
-          <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
-        </section>
+        {screen === 'summary' ? (
+          <section>
+            <Dashboard products={filteredProducts} />
+          </section>
+        ) : (
+          <section>
+            <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
+          </section>
+        )}
 
         {filteredProducts.length === 0 && (
           <div className="glass-panel text-center py-10 mt-8">
@@ -95,6 +98,29 @@ function App() {
       >
         <Plus className="w-7 h-7" />
       </button>
+
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+        <div className="glass-panel p-1.5 flex items-center gap-1">
+          <button
+            onClick={() => setScreen('summary')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+              screen === 'summary' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            サマリー
+          </button>
+          <button
+            onClick={() => setScreen('list')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2 transition ${
+              screen === 'list' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            一覧
+          </button>
+        </div>
+      </nav>
 
       {showAddForm && <AddProductForm userId={user.id} onClose={() => setShowAddForm(false)} />}
     </div>
