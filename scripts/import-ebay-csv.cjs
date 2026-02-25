@@ -145,6 +145,8 @@ async function main() {
     toCreate.push({
       userId,
       channel,
+      quantityTotal: 1,
+      quantityAvailable: 1,
       productName,
       purchasePrice,
       point,
@@ -182,6 +184,8 @@ async function main() {
       purchasePrice: p.purchasePrice,
       point: p.point,
       channel: p.channel,
+      quantityTotal: p.quantityTotal ?? 1,
+      quantityAvailable: p.quantityAvailable ?? 1,
       purchaseDate: p.purchaseDate,
       purchaseLocation: p.purchaseLocation,
       status: p.status,

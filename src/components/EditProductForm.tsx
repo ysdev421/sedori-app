@@ -16,6 +16,8 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
 
   const [formData, setFormData] = useState({
     productName: product.productName,
+    quantityTotal: String(product.quantityTotal || 1),
+    quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
     point: String(product.point),
     purchaseDate: product.purchaseDate,
@@ -34,6 +36,8 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
     try {
       const updates: Partial<Product> = {
         productName: formData.productName,
+        quantityTotal: Math.max(1, parseInt(formData.quantityTotal, 10) || 1),
+        quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
@@ -78,6 +82,29 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
               onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
               className="input-field"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">総数量</label>
+              <input
+                type="number"
+                min={1}
+                value={formData.quantityTotal}
+                onChange={(e) => setFormData({ ...formData, quantityTotal: e.target.value })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">残数</label>
+              <input
+                type="number"
+                min={0}
+                value={formData.quantityAvailable}
+                onChange={(e) => setFormData({ ...formData, quantityAvailable: e.target.value })}
+                className="input-field"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

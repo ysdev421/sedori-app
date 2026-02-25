@@ -1,6 +1,17 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { addDoc, collection, getDocs, orderBy, query, Timestamp, where } from 'firebase/firestore';
-import { Box, PlusCircle } from 'lucide-react';
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  Timestamp,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
+import { Box, CheckCircle2, PlusCircle, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import type { Product } from '@/types';
 
@@ -19,7 +30,17 @@ interface SaleBatch {
   createdAt: string;
 }
 
-const getAvailableQty = (product: Product) => Math.max(1, Number((product as any).quantity || 1));
+interface SaleBatchItem {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  purchasePrice: number;
+  point: number;
+}
+
+const getAvailableQty = (product: Product) =>
+  Math.max(1, Number(product.quantityAvailable ?? product.quantityTotal ?? 1));
 
 export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const [method, setMethod] = useState<'shipping' | 'in_store'>('shipping');
@@ -30,6 +51,10 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState<SaleBatch[]>([]);
   const [message, setMessage] = useState('');
+
+  const [confirmTarget, setConfirmTarget] = useState<SaleBatch | null>(null);
+  const [confirmItems, setConfirmItems] = useState<SaleBatchItem[]>([]);
+  const [finalPrices, setFinalPrices] = useState<Record<string, string>>({});
 
   const candidates = useMemo(
     () => products.filter((p) => p.status === 'pending' || p.status === 'inventory'),
@@ -77,7 +102,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
       return;
     }
     if (selectedEntries.length === 0) {
-      setMessage('売却に入れる商品を選択してください');
+      setMessage('一括売却に入れる商品を選択してください');
       return;
     }
 
@@ -127,6 +152,97 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
     }
   };
 
+  const openConfirm = async (batch: SaleBatch) => {
+    const q = query(collection(db, 'sale_batch_items'), where('batchId', '==', batch.id));
+    const snap = await getDocs(q);
+    const items = snap.docs
+      .map((d: any) => ({ id: d.id, ...(d.data() as any) } as SaleBatchItem & { status?: string }))
+      .filter((i: any) => i.status !== 'confirmed')
+      .map((i: any) => ({
+        id: i.id,
+        productId: i.productId,
+        productName: i.productName,
+        quantity: Number(i.quantity || 1),
+        purchasePrice: Number(i.purchasePrice || 0),
+        point: Number(i.point || 0),
+      }));
+
+    const init: Record<string, string> = {};
+    for (const i of items) {
+      const unitCost = Math.max(0, i.purchasePrice - i.point);
+      init[i.id] = String(unitCost * i.quantity);
+    }
+
+    setConfirmTarget(batch);
+    setConfirmItems(items);
+    setFinalPrices(init);
+  };
+
+  const confirmBatch = async () => {
+    if (!confirmTarget) return;
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const b = writeBatch(db);
+      const today = new Date().toISOString().split('T')[0];
+      const now = Timestamp.now();
+
+      for (const item of confirmItems) {
+        const finalPrice = Number(finalPrices[item.id] || 0);
+
+        b.update(doc(db, 'sale_batch_items', item.id), {
+          finalPrice,
+          status: 'confirmed',
+          confirmedAt: now,
+          updatedAt: now,
+        });
+
+        const pRef = doc(db, 'products', item.productId);
+        const pSnap = await getDoc(pRef);
+        if (!pSnap.exists()) continue;
+        const pData: any = pSnap.data();
+
+        const available = Number(pData.quantityAvailable ?? pData.quantityTotal ?? 1);
+        const nextAvailable = Math.max(0, available - item.quantity);
+
+        const updates: any = {
+          quantityAvailable: nextAvailable,
+          quantityTotal: Number(pData.quantityTotal ?? available),
+          updatedAt: now,
+        };
+
+        if (nextAvailable === 0) {
+          updates.status = 'sold';
+          updates.salePrice = finalPrice;
+          updates.saleLocation = confirmTarget.buyer;
+          updates.saleDate = today;
+        } else if (pData.status === 'pending') {
+          updates.status = 'inventory';
+        }
+
+        b.update(pRef, updates);
+      }
+
+      b.update(doc(db, 'sale_batches', confirmTarget.id), {
+        status: 'confirmed',
+        confirmedAt: now,
+        updatedAt: now,
+      });
+
+      await b.commit();
+      setMessage('一括売却を確定しました');
+      setConfirmTarget(null);
+      setConfirmItems([]);
+      setFinalPrices({});
+      await loadBatches();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : '確定処理に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="glass-panel p-4 space-y-3">
@@ -154,7 +270,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
                 <input type="checkbox" checked={checked} onChange={(e) => handleSelect(p.id, e.target.checked)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{p.productName}</p>
-                  <p className="text-xs text-slate-500">在庫可能数: {maxQty}</p>
+                  <p className="text-xs text-slate-500">残数: {maxQty}</p>
                 </div>
                 <input
                   type="number"
@@ -174,11 +290,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-600">選択: {selectedEntries.length}件</p>
-          <button
-            onClick={handleCreateBatch}
-            disabled={loading}
-            className="btn-primary px-4 py-2 rounded-xl text-sm"
-          >
+          <button onClick={handleCreateBatch} disabled={loading} className="btn-primary px-4 py-2 rounded-xl text-sm">
             {loading ? '作成中...' : '一括売却を作成'}
           </button>
         </div>
@@ -195,16 +307,63 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         <div className="space-y-2">
           {batches.length === 0 && <p className="text-sm text-slate-500">まだ一括売却はありません</p>}
           {batches.map((b) => (
-            <div key={b.id} className="border border-slate-200 rounded-xl p-3 bg-white/60">
-              <p className="text-sm font-semibold">{b.buyer}</p>
-              <p className="text-xs text-slate-500">
-                {b.method === 'shipping' ? '郵送' : '来店'} / 送料 {b.shippingCost} 円 / {new Date(b.createdAt).toLocaleDateString('ja-JP')}
-              </p>
-              {b.campaign && <p className="text-xs text-indigo-600 mt-1">{b.campaign}</p>}
+            <div key={b.id} className="border border-slate-200 rounded-xl p-3 bg-white/60 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">{b.buyer}</p>
+                <p className="text-xs text-slate-500">
+                  {b.method === 'shipping' ? '郵送' : '来店'} / 送料 {b.shippingCost} 円 / {new Date(b.createdAt).toLocaleDateString('ja-JP')}
+                </p>
+                {b.campaign && <p className="text-xs text-indigo-600 mt-1">{b.campaign}</p>}
+              </div>
+              {b.status === 'in_progress' ? (
+                <button onClick={() => openConfirm(b)} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold">
+                  確定入力
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-semibold">
+                  <CheckCircle2 className="w-4 h-4" /> 確定済み
+                </span>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {confirmTarget && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-2xl p-5 max-h-[88vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-bold text-slate-900">一括売却を確定</h4>
+              <button onClick={() => setConfirmTarget(null)} className="p-2 rounded-lg hover:bg-white/70">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {confirmItems.map((item) => (
+                <div key={item.id} className="border border-slate-200 rounded-lg p-3 bg-white/60 grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2 items-center">
+                  <div>
+                    <p className="text-sm font-semibold truncate">{item.productName}</p>
+                    <p className="text-xs text-slate-500">数量 {item.quantity}</p>
+                  </div>
+                  <input
+                    type="number"
+                    value={finalPrices[item.id] || '0'}
+                    onChange={(e) => setFinalPrices((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    className="input-field"
+                    placeholder="最終売却額"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setConfirmTarget(null)} className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700">閉じる</button>
+              <button onClick={confirmBatch} disabled={loading} className="btn-primary px-4 py-2 rounded-lg">{loading ? '確定中...' : '確定する'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

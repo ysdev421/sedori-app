@@ -2,6 +2,8 @@ export interface Product {
   id: string;
   userId: string;
   channel?: 'ebay' | 'kaitori' | 'other';
+  quantityTotal?: number;
+  quantityAvailable?: number;
   productName: string;
   purchasePrice: number;
   point: number;
