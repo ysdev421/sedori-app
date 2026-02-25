@@ -31,8 +31,11 @@ export async function updateProductInFirestore(
   updates: Partial<Product>
 ): Promise<void> {
   const productRef = doc(db, 'products', productId);
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined)
+  );
   await updateDoc(productRef, {
-    ...updates,
+    ...cleanUpdates,
     updatedAt: Timestamp.now(),
   });
 }

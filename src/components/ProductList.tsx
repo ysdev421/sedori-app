@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { CircleDollarSign, Edit, Trash2 } from 'lucide-react';
 import { SaleForm } from './SaleForm';
+import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -12,6 +13,7 @@ interface ProductListProps {
 
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const pending = products.filter((p) => p.status === 'pending');
   const sold = products.filter((p) => p.status === 'sold');
@@ -81,15 +83,24 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => setEditingProduct(product)}
+            className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition"
+            title="編集"
+          >
+            <Edit className="w-5 h-5" />
+          </button>
+
           {product.status !== 'sold' && (
             <button
               onClick={() => setSelectedProduct(product)}
               className="p-2 rounded-xl text-sky-600 hover:bg-sky-50 transition"
               title="売却情報を入力"
             >
-              <Edit className="w-5 h-5" />
+              <CircleDollarSign className="w-5 h-5" />
             </button>
           )}
+
           <button
             onClick={() => onDelete(product.id)}
             className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 transition"
@@ -131,6 +142,9 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
 
       {selectedProduct && (
         <SaleForm product={selectedProduct} userId={userId} onClose={() => setSelectedProduct(null)} />
+      )}
+      {editingProduct && (
+        <EditProductForm product={editingProduct} userId={userId} onClose={() => setEditingProduct(null)} />
       )}
     </div>
   );
