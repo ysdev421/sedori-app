@@ -136,15 +136,15 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             {formatDate(product.purchaseDate)} / {product.purchaseLocation}
           </p>
 
-          <div className="mt-1.5 grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-xs text-soft">購入価格</p>
-              <p className="font-semibold text-slate-900">{formatCurrency(product.purchasePrice)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-soft">ポイント</p>
-              <p className="font-semibold text-slate-900">-{formatCurrency(product.point)}</p>
-            </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <p className="text-slate-800 whitespace-nowrap">
+              <span className="text-xs text-soft mr-1">購入</span>
+              <span className="font-semibold">{formatCurrency(product.purchasePrice)}</span>
+            </p>
+            <p className="text-slate-800 whitespace-nowrap">
+              <span className="text-xs text-soft mr-1">P</span>
+              <span className="font-semibold">-{formatCurrency(product.point)}</span>
+            </p>
           </div>
 
           <div className="mt-1.5">
