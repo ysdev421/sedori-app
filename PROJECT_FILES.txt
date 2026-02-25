@@ -1,0 +1,174 @@
+📊 せどり利益管理アプリ - プロジェクトファイル一覧
+
+========== 📁 メインプロジェクト ==========
+sedori-app/
+│
+├─ 📄 設定ファイル
+│  ├─ package.json ..................... npm パッケージ定義
+│  ├─ tsconfig.json .................... TypeScript 設定
+│  ├─ tsconfig.node.json ............... TypeScript Node設定
+│  ├─ vite.config.ts ................... Vite ビルド設定
+│  ├─ tailwind.config.ts ............... Tailwind CSS 設定
+│  ├─ postcss.config.js ................ PostCSS 設定
+│  ├─ .gitignore ....................... Git 除外設定
+│  ├─ .env.example ..................... 環境変数テンプレート
+│  └─ .vscode/settings.json ............ VS Code 設定
+│
+├─ 📄 HTML テンプレート
+│  └─ index.html ....................... メイン HTML
+│
+├─ 📄 README
+│  └─ README.md ........................ プロジェクト説明
+│
+└─ 📁 src/ (ソースコード)
+   │
+   ├─ main.tsx ......................... React マウントポイント
+   ├─ App.tsx .......................... メインアプリコンポーネント
+   ├─ index.css ........................ グローバルスタイル
+   │
+   ├─ 🧩 components/ (UIコンポーネント)
+   │  ├─ LoginForm.tsx ................. ログイン/登録フォーム
+   │  ├─ Header.tsx .................... ヘッダー・ナビゲーション
+   │  ├─ Dashboard.tsx ................. 統計ダッシュボード
+   │  ├─ ProductList.tsx ............... 商品リスト表示
+   │  ├─ AddProductForm.tsx ............ 商品追加フォーム
+   │  └─ SaleForm.tsx .................. 売却情報入力フォーム
+   │
+   ├─ 🪝 hooks/ (カスタムフック)
+   │  ├─ useAuth.ts .................... 認証管理フック
+   │  └─ useProducts.ts ................ 商品管理フック
+   │
+   ├─ 📚 lib/ (ユーティリティ)
+   │  ├─ firebase.ts ................... Firebase 初期化設定
+   │  ├─ firestore.ts .................. Firestore API操作
+   │  ├─ store.ts ...................... Zustand 状態管理
+   │  └─ utils.ts ...................... ヘルパー関数
+   │
+   └─ 🏷️ types/ (型定義)
+      └─ index.ts ..................... TypeScript 型定義
+
+========== 📄 ドキュメント ==========
+ルートディレクトリ:
+
+├─ QUICKSTART.md ...................... 5分クイックスタート
+├─ SETUP_GUIDE.md ..................... 詳細セットアップガイド
+├─ PROJECT_OVERVIEW.md ................ 技術仕様・アーキテクチャ
+└─ PROJECT_FILES.txt .................. このファイル
+
+========== 🔧 セットアップ手順 ==========
+
+1. プロジェクトをダウンロード
+   git clone https://github.com/[your-username]/sedori-app.git
+
+2. ディレクトリに移動
+   cd sedori-app
+
+3. 環境設定
+   - QUICKSTART.md を読む
+   - SETUP_GUIDE.md でFirebase設定
+   - .env.example を .env.local にコピー
+
+4. インストール
+   npm install
+
+5. 開発サーバー起動
+   npm run dev
+
+6. ブラウザで確認
+   http://localhost:3000
+
+========== 📊 主要な機能 ==========
+
+✅ 商品管理
+   - 商品名・購入価格・ポイントを登録
+   - ステータス管理（待機中 → 売却済）
+
+✅ 売却管理
+   - 売却先・売却価格・売却日を入力
+   - 利益・P利益を自動計算
+
+✅ ダッシュボード
+   - 総売上・総利益・利益率を表示
+   - 在庫価格を把握
+
+✅ データ操作
+   - CSV出力（Google Sheets対応）
+   - Firebase クラウド保存
+   - 複数デバイス自動同期
+
+========== 🚀 本番デプロイ ==========
+
+Vercel (推奨・無料)
+  → https://vercel.com
+
+Netlify
+  → https://netlify.com
+
+セルフホスティング
+  → Node.js + Express + PM2
+
+========== 📚 技術スタック ==========
+
+Frontend:
+  - React 18 + TypeScript
+  - Vite (高速ビルド)
+  - Tailwind CSS (スタイリング)
+  - Lucide React (アイコン)
+  - Zustand (状態管理)
+  - date-fns (日付操作)
+
+Backend:
+  - Firebase Authentication
+  - Firestore Database
+  - Firebase Storage
+
+========== 🔒 セキュリティ ==========
+
+- Firebase Authentication (ユーザー認証)
+- Firestore Security Rules (データ保護)
+- Environment Variables (.env.local)
+- HTTPS通信 (本番)
+
+========== 📞 サポート ==========
+
+問題が発生した場合:
+
+1. SETUP_GUIDE.md のトラブルシューティングを確認
+2. GitHub Issues で報告
+3. Firebase Consoleで設定を再確認
+
+========== 📄 ライセンス ==========
+
+MIT License
+自由に使用・改変・配布が可能です
+
+========== ✨ 次のステップ ==========
+
+[ ] QUICKSTART.md を読む
+[ ] SETUP_GUIDE.md でセットアップ
+[ ] npm install でインストール
+[ ] npm run dev で起動確認
+[ ] Firebase 設定を完成
+[ ] アカウント登録・テスト
+[ ] GitHub にプッシュ
+[ ] Vercel にデプロイ
+
+========== 🎯 開発チェックリスト ==========
+
+[ ] ローカル開発環境構築
+[ ] Firebase 認証確認
+[ ] 商品追加・削除テスト
+[ ] 売却情報入力テスト
+[ ] CSV出力テスト
+[ ] スマートフォン動作確認
+[ ] 複数デバイス同期確認
+[ ] セキュリティルール設定
+[ ] 本番環境デプロイ
+[ ] ユーザーテスト
+
+========== Happy Coding! 📊 ==========
+
+このプロジェクトは GitHub + VSCode で管理できます。
+開発を進めながら、機能を追加・改善してください。
+
+Built with ❤️ for Sedori Community
