@@ -66,7 +66,7 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <Header userName={user.displayName || user.email} products={products} />
+      <Header userName={user.displayName || user.email} />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28">
         <section className="mb-6">
