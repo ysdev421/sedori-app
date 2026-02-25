@@ -16,6 +16,7 @@ function App() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [screen, setScreen] = useState<'summary' | 'list'>('summary');
   const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
+  const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
 
   const filteredProducts =
     channelFilter === 'all'
@@ -23,6 +24,29 @@ function App() {
       : channelFilter === 'ebay'
       ? products.filter((p) => p.channel === 'ebay' || !p.channel)
       : products.filter((p) => p.channel === channelFilter);
+
+  const summaryProducts = filteredProducts.filter((p) => {
+    if (periodFilter === 'all') return true;
+
+    const targetDate = p.status === 'sold' && p.saleDate ? p.saleDate : p.purchaseDate;
+    const d = new Date(targetDate);
+    if (Number.isNaN(d.getTime())) return false;
+
+    const now = new Date();
+    if (periodFilter === 'thisYear') {
+      return d.getFullYear() === now.getFullYear();
+    }
+
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    if (periodFilter === 'thisMonth') {
+      return d >= currentMonthStart && d < nextMonthStart;
+    }
+
+    return d >= lastMonthStart && d < currentMonthStart;
+  });
 
   if (authLoading) {
     return (
@@ -75,7 +99,43 @@ function App() {
 
         {screen === 'summary' ? (
           <section>
-            <Dashboard products={filteredProducts} />
+            <div className="mb-4">
+              <div className="glass-panel p-2 inline-flex gap-1">
+                <button
+                  onClick={() => setPeriodFilter('thisMonth')}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                    periodFilter === 'thisMonth' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                  }`}
+                >
+                  今月
+                </button>
+                <button
+                  onClick={() => setPeriodFilter('lastMonth')}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                    periodFilter === 'lastMonth' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                  }`}
+                >
+                  先月
+                </button>
+                <button
+                  onClick={() => setPeriodFilter('thisYear')}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                    periodFilter === 'thisYear' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                  }`}
+                >
+                  今年
+                </button>
+                <button
+                  onClick={() => setPeriodFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
+                    periodFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                  }`}
+                >
+                  全期間
+                </button>
+              </div>
+            </div>
+            <Dashboard products={summaryProducts} />
           </section>
         ) : (
           <section>
