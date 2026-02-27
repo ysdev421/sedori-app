@@ -1,9 +1,9 @@
-﻿# Claude Instructions
+﻿# Claude 向け指示
 
-Canonical instructions are maintained in `AGENTS.md` at repository root.
+このリポジトリの正本ルールは、ルートの `AGENTS.md` に定義されています。
 
-Operational rule:
-- Treat `AGENTS.md` as source of truth.
-- Keep this file synchronized whenever `AGENTS.md` changes.
-- On any code/content file change, check whether instruction updates are needed; if needed, update both files in the same change.
-- Commit and push do not require prior user approval unless the user explicitly requests a confirmation step.
+## 運用ルール
+- `AGENTS.md` を正本として扱う。
+- `AGENTS.md` を更新した場合、このファイルも同期して更新する。
+- コード／コンテンツファイルを変更した場合は、指示更新の要否を確認し、必要なら同一変更内で両ファイルを更新する。
+- ユーザーが確認ステップを明示的に要求しない限り、コミット・プッシュは事前許可なしで実行してよい。

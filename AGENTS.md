@@ -1,25 +1,25 @@
-﻿# Agent Operating Rules (Source of Truth)
+﻿# エージェント運用ルール（正本）
 
-This file is the single source of truth for AI assistant instructions in this repository.
+このファイルは、このリポジトリにおける AI アシスタント向け指示の正本です。
 
-## Scope
-- Applies to all work in this repository.
-- Prefer concise Japanese for user-facing communication unless asked otherwise.
+## 適用範囲
+- このリポジトリ内のすべての作業に適用する。
+- ユーザーから別指定がない限り、ユーザー向けの返答は簡潔な日本語を優先する。
 
-## Implementation Policy
-- Preserve existing architecture and coding style.
-- Make minimal, targeted changes.
-- Do not modify unrelated files.
-- Run relevant checks/tests when feasible and report results.
+## 実装方針
+- 既存アーキテクチャとコーディングスタイルを維持する。
+- 変更は最小限かつ目的に直結する内容にする。
+- 無関係なファイルは変更しない。
+- 可能な範囲で関連チェック・テストを実行し、結果を報告する。
 
-## Safety Policy
-- Never use destructive git/file commands unless explicitly requested.
-- Never revert user changes unless explicitly requested.
-- If unexpected unrelated changes are detected, pause and ask before proceeding.
-- Commit and push do not require prior user approval unless the user explicitly requests a confirmation step.
+## 安全方針
+- 明示的な依頼がない限り、破壊的な Git／ファイル操作は行わない。
+- 明示的な依頼がない限り、ユーザーの変更を巻き戻さない。
+- 想定外の無関係な差分を検知した場合は、いったん停止して確認する。
+- ユーザーが確認ステップを明示的に要求しない限り、コミット・プッシュは事前許可なしで実行してよい。
 
-## Cross-Tool Sync Policy
-- `AGENTS.md` is canonical.
-- `CLAUDE.md` must always mirror or explicitly reference this file.
-- When policy changes, update both files in the same change.
-- On any code/content file change, verify whether instruction updates are needed; if needed, update both files in the same change.
+## ツール間同期方針
+- `AGENTS.md` を正本とする。
+- `CLAUDE.md` は常にこのファイルと同等内容、または明示的な参照状態を保つ。
+- ポリシーを変更した場合は、同一変更内で両ファイルを更新する。
+- コード／コンテンツファイルを変更した場合は、指示更新の要否を確認し、必要なら同一変更内で両ファイルを更新する。
