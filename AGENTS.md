@@ -21,3 +21,4 @@ This file is the single source of truth for AI assistant instructions in this re
 - `AGENTS.md` is canonical.
 - `CLAUDE.md` must always mirror or explicitly reference this file.
 - When policy changes, update both files in the same change.
+- On any code/content file change, verify whether instruction updates are needed; if needed, update both files in the same change.
