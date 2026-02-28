@@ -37,6 +37,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('thisMonth');
   const [sortKey, setSortKey] = useState<SortKey>('purchaseDateDesc');
   const [showFilters, setShowFilters] = useState(false);
+  const [showDateRange, setShowDateRange] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -251,6 +252,12 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
               <button onClick={() => applyPeriodPreset('lastMonth')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'lastMonth' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>先月</button>
               <button onClick={() => applyPeriodPreset('thisYear')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'thisYear' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>今年</button>
               <button onClick={() => applyPeriodPreset('all')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>全期間</button>
+              <button
+                onClick={() => setShowDateRange((v) => !v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${showDateRange ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+              >
+                日付指定
+              </button>
             </div>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
               <option value="all">ステータス: すべて</option>
@@ -259,8 +266,12 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
               <option value="inventory">在庫のみ</option>
             </select>
 
-            <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
-            <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+            {showDateRange && (
+              <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+            )}
+            {showDateRange && (
+              <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+            )}
 
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="input-field">
               <option value="purchaseDateDesc">並び順: 購入日が新しい順</option>
