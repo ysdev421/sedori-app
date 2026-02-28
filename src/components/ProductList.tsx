@@ -285,9 +285,20 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       <div className="text-xs text-soft px-1">検索結果 {filtered.length} 件</div>
 
       <div className="space-y-6">
-        {section('未着', 'bg-slate-100 text-slate-700', pending)}
-        {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
-        {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
+        {sortKey === 'purchaseDateDesc' ? (
+          <section>
+            <h2 className="mb-3 text-sm font-bold tracking-wide">
+              <span className="inline-flex items-center rounded-full px-3 py-1 bg-slate-100 text-slate-700">一覧 {filtered.length}</span>
+            </h2>
+            <div className="space-y-3">{filtered.map(renderProductCard)}</div>
+          </section>
+        ) : (
+          <>
+            {section('未着', 'bg-slate-100 text-slate-700', pending)}
+            {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
+            {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
+          </>
+        )}
       </div>
 
       {selectedProduct && (
