@@ -25,7 +25,6 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
     point: String(product.point),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
-    status: product.status,
     salePrice: product.salePrice ? String(product.salePrice) : '',
     saleLocation: product.saleLocation || '',
     saleDate: product.saleDate || '',
@@ -46,10 +45,9 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
-        status: formData.status,
       };
 
-      if (formData.status === 'sold') {
+      if (product.status === 'sold') {
         updates.salePrice = parseFloat(formData.salePrice) || 0;
         updates.saleLocation = formData.saleLocation || '未設定';
         updates.saleDate = formData.saleDate || new Date().toISOString().split('T')[0];
@@ -145,15 +143,9 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
-                className="input-field"
-              >
-                <option value="pending">待機中</option>
-                <option value="inventory">在庫</option>
-                <option value="sold">売却済み</option>
-              </select>
+              <div className="input-field bg-slate-50 text-slate-700">
+                {product.status === 'sold' ? '売却済み' : product.status === 'inventory' ? '在庫' : '待機中'}
+              </div>
             </div>
           </div>
 
@@ -190,7 +182,7 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
             />
           </div>
 
-          {formData.status === 'sold' && (
+          {product.status === 'sold' && (
             <div className="glass-panel p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-800">売却情報</p>
               <div className="grid grid-cols-2 gap-3">
