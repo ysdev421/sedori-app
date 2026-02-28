@@ -92,6 +92,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
               required
               value={formData.productName}
               onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+              disabled={showChannelField}
               className="input-field"
             />
           </div>
@@ -104,6 +105,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 min={1}
                 value={formData.quantityTotal}
                 onChange={(e) => setFormData({ ...formData, quantityTotal: e.target.value })}
+                disabled={showChannelField}
                 className="input-field"
               />
             </div>
@@ -114,6 +116,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 min={0}
                 value={formData.quantityAvailable}
                 onChange={(e) => setFormData({ ...formData, quantityAvailable: e.target.value })}
+                disabled={showChannelField}
                 className="input-field"
               />
             </div>
@@ -127,6 +130,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 required
                 value={formData.purchasePrice}
                 onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                disabled={showChannelField}
                 className="input-field"
               />
             </div>
@@ -136,6 +140,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 type="number"
                 value={formData.point}
                 onChange={(e) => setFormData({ ...formData, point: e.target.value })}
+                disabled={showChannelField}
                 className="input-field"
               />
             </div>
@@ -148,6 +153,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 type="date"
                 value={formData.purchaseDate}
                 onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                disabled={showChannelField}
                 className="input-field"
               />
             </div>
@@ -159,6 +165,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
+                  disabled={showChannelField}
                   className="input-field"
                 >
                   <option value="pending">未着</option>
@@ -188,6 +195,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
               type="text"
               value={formData.purchaseLocation}
               onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
+              disabled={showChannelField}
               className="input-field"
             />
           </div>
@@ -202,6 +210,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                     type="number"
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
+                    disabled={showChannelField}
                     className="input-field"
                   />
                 </div>
@@ -211,6 +220,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                     type="date"
                     value={formData.saleDate}
                     onChange={(e) => setFormData({ ...formData, saleDate: e.target.value })}
+                    disabled={showChannelField}
                     className="input-field"
                   />
                 </div>
@@ -221,6 +231,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                   type="text"
                   value={formData.saleLocation}
                   onChange={(e) => setFormData({ ...formData, saleLocation: e.target.value })}
+                  disabled={showChannelField}
                   className="input-field"
                 />
               </div>
