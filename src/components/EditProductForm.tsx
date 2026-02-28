@@ -13,6 +13,7 @@ interface EditProductFormProps {
 export function EditProductForm({ product, userId, onClose }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
+  const [showChannelField, setShowChannelField] = useState(false);
 
   const [formData, setFormData] = useState({
     productName: product.productName,
@@ -155,16 +156,27 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
-            <select
-              value={formData.channel}
-              onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
-              className="input-field"
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowChannelField((v) => !v)}
+              className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50 transition"
             >
-              <option value="ebay">eBay</option>
-              <option value="kaitori">買取流し</option>
-            </select>
+              {showChannelField ? '販路変更を閉じる' : '販路を変更する'}
+            </button>
+            {showChannelField && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
+                <select
+                  value={formData.channel}
+                  onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
+                  className="input-field"
+                >
+                  <option value="ebay">eBay</option>
+                  <option value="kaitori">買取流し</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div>
