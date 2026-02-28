@@ -25,6 +25,7 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
     point: String(product.point),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
+    status: (product.status === 'sold' ? 'sold' : product.status === 'inventory' ? 'inventory' : 'pending') as Product['status'],
     salePrice: product.salePrice ? String(product.salePrice) : '',
     saleLocation: product.saleLocation || '',
     saleDate: product.saleDate || '',
@@ -45,6 +46,7 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
+        status: product.status === 'sold' ? 'sold' : formData.status,
       };
 
       if (product.status === 'sold') {
@@ -143,9 +145,18 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
-              <div className="input-field bg-slate-50 text-slate-700">
-                {product.status === 'sold' ? '売却済み' : product.status === 'inventory' ? '在庫' : '未着'}
-              </div>
+              {product.status === 'sold' ? (
+                <div className="input-field bg-slate-50 text-slate-700">売却済み</div>
+              ) : (
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
+                  className="input-field"
+                >
+                  <option value="pending">未着</option>
+                  <option value="inventory">在庫</option>
+                </select>
+              )}
             </div>
           </div>
 
