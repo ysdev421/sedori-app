@@ -18,6 +18,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
     productName: product.productName,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
+    channel: (product.channel === 'kaitori' ? 'kaitori' : 'ebay') as 'ebay' | 'kaitori',
     purchasePrice: String(product.purchasePrice),
     point: String(product.point),
     purchaseDate: product.purchaseDate,
@@ -38,6 +39,7 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
         productName: formData.productName,
         quantityTotal: Math.max(1, parseInt(formData.quantityTotal, 10) || 1),
         quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
+        channel: formData.channel,
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
@@ -151,6 +153,18 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                 <option value="sold">売却済み</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
+            <select
+              value={formData.channel}
+              onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
+              className="input-field"
+            >
+              <option value="ebay">eBay</option>
+              <option value="kaitori">買取流し</option>
+            </select>
           </div>
 
           <div>
