@@ -18,7 +18,6 @@ type PeriodPreset = 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [openChannelEditor, setOpenChannelEditor] = useState(false);
 
   const [query, setQuery] = useState('');
   const currentMonthStart = new Date();
@@ -140,24 +139,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
 
         <div className="flex gap-1 shrink-0">
           <button
-            onClick={() => {
-              setOpenChannelEditor(false);
-              setEditingProduct(product);
-            }}
+            onClick={() => setEditingProduct(product)}
             className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
             title="編集"
           >
             <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              setOpenChannelEditor(true);
-              setEditingProduct(product);
-            }}
-            className="px-2 py-1.5 rounded-lg text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition"
-            title="販路変更"
-          >
-            販路
           </button>
 
           {product.status !== 'sold' && (
@@ -281,11 +267,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         <EditProductForm
           product={editingProduct}
           userId={userId}
-          initialShowChannelField={openChannelEditor}
-          onClose={() => {
-            setEditingProduct(null);
-            setOpenChannelEditor(false);
-          }}
+          onClose={() => setEditingProduct(null)}
         />
       )}
     </div>

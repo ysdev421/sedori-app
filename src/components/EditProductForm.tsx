@@ -8,13 +8,12 @@ interface EditProductFormProps {
   product: Product;
   userId: string;
   onClose?: () => void;
-  initialShowChannelField?: boolean;
 }
 
-export function EditProductForm({ product, userId, onClose, initialShowChannelField = false }: EditProductFormProps) {
+export function EditProductForm({ product, userId, onClose }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
-  const [showChannelField, setShowChannelField] = useState(initialShowChannelField);
+  const [showChannelField, setShowChannelField] = useState(false);
 
   const [formData, setFormData] = useState({
     productName: product.productName,
@@ -71,9 +70,18 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
       <div className="w-full bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto animate-slide-in">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-slate-900">商品を編集</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100">
-            <X className="w-5 h-5 text-slate-600" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowChannelField((v) => !v)}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-700 hover:bg-slate-50 transition"
+            >
+              {showChannelField ? '販路変更を閉じる' : '販路を変更する'}
+            </button>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100">
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,28 +168,19 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
             </div>
           </div>
 
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowChannelField((v) => !v)}
-              className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50 transition"
-            >
-              {showChannelField ? '販路変更を閉じる' : '販路を変更する'}
-            </button>
-            {showChannelField && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
-                <select
-                  value={formData.channel}
-                  onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
-                  className="input-field"
-                >
-                  <option value="ebay">eBay</option>
-                  <option value="kaitori">買取流し</option>
-                </select>
-              </div>
-            )}
-          </div>
+          {showChannelField && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
+              <select
+                value={formData.channel}
+                onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
+                className="input-field"
+              >
+                <option value="ebay">eBay</option>
+                <option value="kaitori">買取流し</option>
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
