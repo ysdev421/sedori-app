@@ -1,6 +1,7 @@
 export interface Product {
   id: string;
   userId: string;
+  janCode?: string;
   channel?: 'ebay' | 'kaitori' | 'other';
   quantityTotal?: number;
   quantityAvailable?: number;
@@ -15,6 +16,21 @@ export interface Product {
   saleDate?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductTemplate {
+  id: string;
+  userId: string;
+  janCode?: string;
+  productName: string;
+  purchaseLocation?: string;
+  channel?: 'ebay' | 'kaitori' | 'other';
+  lastPurchasePrice?: number;
+  lastPoint?: number;
+  usedCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastUsedAt: string;
 }
 
 export interface SaleRecord {

@@ -24,5 +24,10 @@ service cloud.firestore {
       allow read, create: if isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId);
     }
+
+    match /product_templates/{docId} {
+      allow read, create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
   }
 }

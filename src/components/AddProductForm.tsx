@@ -1,7 +1,9 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Loader, Plus, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
+import { getUserProductTemplates, upsertProductTemplate } from '@/lib/firestore';
 import { useStore } from '@/lib/store';
+import type { ProductTemplate } from '@/types';
 
 interface AddProductFormProps {
   userId: string;
@@ -10,6 +12,7 @@ interface AddProductFormProps {
 
 export function AddProductForm({ userId, onClose }: AddProductFormProps) {
   const [formData, setFormData] = useState({
+    janCode: '',
     productName: '',
     quantity: '1',
     purchasePrice: '',
@@ -20,8 +23,48 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
   });
 
   const [error, setError] = useState('');
+  const [templates, setTemplates] = useState<ProductTemplate[]>([]);
   const { createProduct } = useProducts(userId);
   const loading = useStore((state) => state.loading);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const rows = await getUserProductTemplates(userId);
+        setTemplates(rows);
+      } catch {
+        setTemplates([]);
+      }
+    };
+    loadTemplates();
+  }, [userId]);
+
+  const applyTemplate = (template: ProductTemplate) => {
+    setFormData((prev) => ({
+      ...prev,
+      janCode: template.janCode || prev.janCode,
+      productName: template.productName || prev.productName,
+      purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
+      channel: template.channel === 'kaitori' ? 'kaitori' : 'ebay',
+      purchasePrice:
+        typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
+      point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
+    }));
+  };
+
+  const candidateTemplates = useMemo(() => {
+    const janQuery = formData.janCode.trim();
+    const nameQuery = formData.productName.trim().toLowerCase();
+    if (!janQuery && !nameQuery) return templates.slice(0, 5);
+
+    return templates
+      .filter((t) => {
+        const hitJan = janQuery && t.janCode?.includes(janQuery);
+        const hitName = nameQuery && t.productName.toLowerCase().includes(nameQuery);
+        return Boolean(hitJan || hitName);
+      })
+      .slice(0, 5);
+  }, [templates, formData.janCode, formData.productName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,19 +72,33 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
 
     try {
       const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
+      const purchasePrice = parseFloat(formData.purchasePrice);
+      const point = parseFloat(formData.point) || 0;
+
       await createProduct({
+        janCode: formData.janCode.trim() || undefined,
         productName: formData.productName,
         quantityTotal: qty,
         quantityAvailable: qty,
         channel: formData.channel,
-        purchasePrice: parseFloat(formData.purchasePrice),
-        point: parseFloat(formData.point) || 0,
+        purchasePrice,
+        point,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
         status: 'pending',
       });
 
+      await upsertProductTemplate(userId, {
+        janCode: formData.janCode.trim() || undefined,
+        productName: formData.productName,
+        purchaseLocation: formData.purchaseLocation,
+        channel: formData.channel,
+        purchasePrice,
+        point,
+      });
+
       setFormData({
+        janCode: '',
         productName: '',
         quantity: '1',
         purchasePrice: '',
@@ -68,15 +125,51 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">JAN</label>
+            <input
+              type="text"
+              value={formData.janCode}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, janCode: value });
+                const matched = templates.find((t) => t.janCode && t.janCode === value.trim());
+                if (matched) applyTemplate(matched);
+              }}
+              className="input-field"
+              placeholder="例: 4901234567890"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">商品名 *</label>
             <input
               type="text"
               value={formData.productName}
-              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ ...formData, productName: value });
+                const matched = templates.find((t) => t.productName === value.trim());
+                if (matched) applyTemplate(matched);
+              }}
               required
               className="input-field"
               placeholder="例: チェキフィルム"
             />
+            {candidateTemplates.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {candidateTemplates.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => applyTemplate(t)}
+                    className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
+                    title={t.janCode ? `JAN: ${t.janCode}` : t.productName}
+                  >
+                    {t.productName}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
