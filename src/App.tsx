@@ -158,7 +158,7 @@ function App() {
 
       <button
         onClick={() => setShowAddForm(true)}
-        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
+        className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] sm:bottom-8 sm:right-8 z-[70] bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
         title="商品を追加"
       >
         <Plus className="w-7 h-7" />

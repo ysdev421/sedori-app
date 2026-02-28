@@ -14,6 +14,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
     quantity: '1',
     purchasePrice: '',
     point: '',
+    channel: 'ebay' as 'ebay' | 'kaitori',
     purchaseDate: new Date().toISOString().split('T')[0],
     purchaseLocation: 'メルカリ',
   });
@@ -32,6 +33,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
         productName: formData.productName,
         quantityTotal: qty,
         quantityAvailable: qty,
+        channel: formData.channel,
         purchasePrice: parseFloat(formData.purchasePrice),
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
@@ -44,6 +46,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
         quantity: '1',
         purchasePrice: '',
         point: '',
+        channel: 'ebay',
         purchaseDate: new Date().toISOString().split('T')[0],
         purchaseLocation: 'メルカリ',
       });
@@ -111,6 +114,18 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
               className="input-field"
               placeholder="0"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">販路</label>
+            <select
+              value={formData.channel}
+              onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
+              className="input-field"
+            >
+              <option value="ebay">eBay</option>
+              <option value="kaitori">買取流し</option>
+            </select>
           </div>
 
           <div>
