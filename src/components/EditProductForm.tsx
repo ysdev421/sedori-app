@@ -144,7 +144,7 @@ export function EditProductForm({ product, userId, onClose, initialShowChannelFi
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
               <div className="input-field bg-slate-50 text-slate-700">
-                {product.status === 'sold' ? '売却済み' : product.status === 'inventory' ? '在庫' : '待機中'}
+                {product.status === 'sold' ? '売却済み' : product.status === 'inventory' ? '在庫' : '未着'}
               </div>
             </div>
           </div>

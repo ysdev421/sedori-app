@@ -106,7 +106,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const statusLabel = (status: Product['status']) => {
     if (status === 'sold') return '売却済み';
     if (status === 'inventory') return '在庫';
-    return '待機中';
+    return '未着';
   };
 
   const channelLabel = (channel?: Product['channel']) => {
@@ -249,7 +249,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             </div>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
               <option value="all">ステータス: すべて</option>
-              <option value="pending">未着/待機+在庫</option>
+              <option value="pending">未着+在庫</option>
               <option value="sold">売却済み</option>
               <option value="inventory">在庫のみ</option>
             </select>
@@ -269,7 +269,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       <div className="text-xs text-soft px-1">検索結果 {filtered.length} 件</div>
 
       <div className="space-y-6">
-        {section('待機中', 'bg-slate-100 text-slate-700', pending)}
+        {section('未着', 'bg-slate-100 text-slate-700', pending)}
         {section('在庫', 'bg-sky-100 text-sky-700', inventory)}
         {section('売却済み', 'bg-emerald-100 text-emerald-700', sold)}
       </div>
