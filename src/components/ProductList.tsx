@@ -15,6 +15,12 @@ type StatusFilter = 'all' | 'pending' | 'inventory' | 'sold';
 type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
 type PeriodPreset = 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 
+const toTime = (dateString?: string) => {
+  if (!dateString) return 0;
+  const t = new Date(dateString).getTime();
+  return Number.isNaN(t) ? 0 : t;
+};
+
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -57,7 +63,9 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (sortKey === 'salePriceDesc') {
         return (b.salePrice || 0) - (a.salePrice || 0);
       }
-      return b.purchaseDate.localeCompare(a.purchaseDate);
+      const byPurchaseDate = toTime(b.purchaseDate) - toTime(a.purchaseDate);
+      if (byPurchaseDate !== 0) return byPurchaseDate;
+      return toTime(b.createdAt) - toTime(a.createdAt);
     });
   }, [products, query, statusFilter, fromDate, toDate, sortKey]);
 
