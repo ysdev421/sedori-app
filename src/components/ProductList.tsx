@@ -13,7 +13,7 @@ interface ProductListProps {
 
 type StatusFilter = 'all' | 'pending' | 'inventory' | 'sold';
 type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
-type PeriodPreset = 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
+type PeriodPreset = 'last30' | 'last60' | 'last90' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 
 const toTime = (dateString?: string) => {
   if (!dateString) return 0;
@@ -83,6 +83,14 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     if (preset === 'thisYear') {
       setFromDate(`${y}-01-01`);
       setToDate(`${y}-12-31`);
+      return;
+    }
+    if (preset === 'last30' || preset === 'last60' || preset === 'last90') {
+      const days = preset === 'last30' ? 30 : preset === 'last60' ? 60 : 90;
+      const start = new Date(now);
+      start.setDate(now.getDate() - (days - 1));
+      setFromDate(fmt(start));
+      setToDate(fmt(now));
       return;
     }
     if (preset === 'thisMonth') {
@@ -236,6 +244,9 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         {showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <div className="lg:col-span-4 flex flex-wrap gap-1">
+              <button onClick={() => applyPeriodPreset('last30')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'last30' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>直近30日</button>
+              <button onClick={() => applyPeriodPreset('last60')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'last60' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>直近60日</button>
+              <button onClick={() => applyPeriodPreset('last90')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'last90' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>直近90日</button>
               <button onClick={() => applyPeriodPreset('thisMonth')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'thisMonth' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>今月</button>
               <button onClick={() => applyPeriodPreset('lastMonth')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'lastMonth' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>先月</button>
               <button onClick={() => applyPeriodPreset('thisYear')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${periodPreset === 'thisYear' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}>今年</button>
