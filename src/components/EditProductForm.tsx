@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Loader, Save, X } from 'lucide-react';
+import { Loader, Save, Trash2, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import type { Product } from '@/types';
@@ -7,10 +7,11 @@ import type { Product } from '@/types';
 interface EditProductFormProps {
   product: Product;
   userId: string;
+  onDelete: (id: string) => void;
   onClose?: () => void;
 }
 
-export function EditProductForm({ product, userId, onClose }: EditProductFormProps) {
+export function EditProductForm({ product, userId, onDelete, onClose }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
   const [showChannelField, setShowChannelField] = useState(false);
@@ -62,6 +63,17 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
       onClose?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました');
+    }
+  };
+
+  const handleDelete = async () => {
+    const ok = window.confirm(`「${product.productName}」を削除します。元に戻せません。`);
+    if (!ok) return;
+    try {
+      await onDelete(product.id);
+      onClose?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました');
     }
   };
 
@@ -235,11 +247,22 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
 
           {error && <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{error}</div>}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full inline-flex items-center justify-center gap-2 mt-2">
-            {loading && <Loader className="w-4 h-4 animate-spin" />}
-            <Save className="w-4 h-4" />
-            保存
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 transition disabled:opacity-60"
+            >
+              <Trash2 className="w-4 h-4" />
+              削除
+            </button>
+            <button type="submit" disabled={loading} className="btn-primary w-full inline-flex items-center justify-center gap-2">
+              {loading && <Loader className="w-4 h-4 animate-spin" />}
+              <Save className="w-4 h-4" />
+              保存
+            </button>
+          </div>
         </form>
       </div>
     </div>

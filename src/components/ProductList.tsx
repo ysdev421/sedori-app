@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from 'react';
-import { CircleDollarSign, Edit, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { CircleDollarSign, Edit, Search, SlidersHorizontal } from 'lucide-react';
 import { SaleForm } from './SaleForm';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate } from '@/lib/utils';
@@ -173,13 +173,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             </button>
           )}
 
-          <button
-            onClick={() => onDelete(product.id)}
-            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition"
-            title="削除"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -308,6 +301,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         <EditProductForm
           product={editingProduct}
           userId={userId}
+          onDelete={onDelete}
           onClose={() => setEditingProduct(null)}
         />
       )}
