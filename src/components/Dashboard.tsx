@@ -5,6 +5,7 @@ import type { Product } from '@/types';
 
 interface DashboardProps {
   products: Product[];
+  showMoM?: boolean;
 }
 
 function getMonthKey(dateString?: string): string | null {
@@ -96,7 +97,7 @@ function momText(value: number | null) {
   return `前月比 ${sign}${value.toFixed(1)}%`;
 }
 
-export function Dashboard({ products }: DashboardProps) {
+export function Dashboard({ products, showMoM = true }: DashboardProps) {
   const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'pointProfit'>('revenue');
 
   const summary = calculateProfitSummary(products);
@@ -110,7 +111,7 @@ export function Dashboard({ products }: DashboardProps) {
     {
       label: '総売上',
       value: formatCurrency(summary.totalRevenue),
-      sub: momText(mom.revenue),
+      sub: showMoM ? momText(mom.revenue) : null,
       subTone: mom.revenue === null ? 'text-slate-500' : mom.revenue >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: DollarSign,
       tone: 'from-sky-100 to-cyan-100 text-sky-700',
@@ -118,7 +119,7 @@ export function Dashboard({ products }: DashboardProps) {
     {
       label: '総利益',
       value: formatCurrency(summary.totalProfit),
-      sub: momText(mom.profit),
+      sub: showMoM ? momText(mom.profit) : null,
       subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: TrendingUp,
       tone: 'from-emerald-100 to-green-100 text-emerald-700',
@@ -127,7 +128,7 @@ export function Dashboard({ products }: DashboardProps) {
     {
       label: 'P利益',
       value: formatCurrency(summary.totalPointProfit),
-      sub: momText(mom.pointProfit),
+      sub: showMoM ? momText(mom.pointProfit) : null,
       subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: TrendingUp,
       tone: 'from-teal-100 to-emerald-100 text-teal-700',
@@ -135,7 +136,7 @@ export function Dashboard({ products }: DashboardProps) {
     {
       label: '在庫評価',
       value: formatCurrency(summary.inventoryValue),
-      sub: momText(inventoryMom),
+      sub: showMoM ? momText(inventoryMom) : null,
       subTone: inventoryMom === null ? 'text-slate-500' : inventoryMom >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: Package,
       tone: 'from-amber-100 to-orange-100 text-amber-700',

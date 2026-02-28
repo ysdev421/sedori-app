@@ -136,7 +136,7 @@ function App() {
                 </button>
               </div>
             </div>
-            <Dashboard products={summaryProducts} />
+            <Dashboard products={summaryProducts} showMoM={periodFilter !== 'all'} />
           </section>
         ) : screen === 'list' ? (
           <section>
