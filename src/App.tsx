@@ -15,7 +15,7 @@ function App() {
   const user = useStore((state) => state.user);
   const { products, deleteProductData } = useProducts(user?.id || null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [screen, setScreen] = useState<'summary' | 'list' | 'sale'>('summary');
+  const [screen, setScreen] = useState<'summary' | 'list' | 'sale'>('list');
   const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
 
