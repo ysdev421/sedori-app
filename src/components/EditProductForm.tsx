@@ -85,95 +85,92 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
-            <input
-              type="text"
-              required
-              value={formData.productName}
-              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-              disabled={showChannelField}
-              className="input-field"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">総数量</label>
-              <input
-                type="number"
-                min={1}
-                value={formData.quantityTotal}
-                onChange={(e) => setFormData({ ...formData, quantityTotal: e.target.value })}
-                disabled={showChannelField}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">残数</label>
-              <input
-                type="number"
-                min={0}
-                value={formData.quantityAvailable}
-                onChange={(e) => setFormData({ ...formData, quantityAvailable: e.target.value })}
-                disabled={showChannelField}
-                className="input-field"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入価格</label>
-              <input
-                type="number"
-                required
-                value={formData.purchasePrice}
-                onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
-                disabled={showChannelField}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">ポイント</label>
-              <input
-                type="number"
-                value={formData.point}
-                onChange={(e) => setFormData({ ...formData, point: e.target.value })}
-                disabled={showChannelField}
-                className="input-field"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入日</label>
-              <input
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                disabled={showChannelField}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
-              {product.status === 'sold' ? (
-                <div className="input-field bg-slate-50 text-slate-700">売却済み</div>
-              ) : (
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
-                  disabled={showChannelField}
+          {!showChannelField && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.productName}
+                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
                   className="input-field"
-                >
-                  <option value="pending">未着</option>
-                  <option value="inventory">在庫</option>
-                </select>
-              )}
-            </div>
-          </div>
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">総数量</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={formData.quantityTotal}
+                    onChange={(e) => setFormData({ ...formData, quantityTotal: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">残数</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formData.quantityAvailable}
+                    onChange={(e) => setFormData({ ...formData, quantityAvailable: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">購入価格</label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.purchasePrice}
+                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">ポイント</label>
+                  <input
+                    type="number"
+                    value={formData.point}
+                    onChange={(e) => setFormData({ ...formData, point: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">購入日</label>
+                  <input
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
+                  {product.status === 'sold' ? (
+                    <div className="input-field bg-slate-50 text-slate-700">売却済み</div>
+                  ) : (
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as Product['status'] })}
+                      className="input-field"
+                    >
+                      <option value="pending">未着</option>
+                      <option value="inventory">在庫</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {showChannelField && (
             <div>
@@ -189,18 +186,19 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
-            <input
-              type="text"
-              value={formData.purchaseLocation}
-              onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
-              disabled={showChannelField}
-              className="input-field"
-            />
-          </div>
+          {!showChannelField && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
+              <input
+                type="text"
+                value={formData.purchaseLocation}
+                onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
+                className="input-field"
+              />
+            </div>
+          )}
 
-          {product.status === 'sold' && (
+          {!showChannelField && product.status === 'sold' && (
             <div className="glass-panel p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-800">売却情報</p>
               <div className="grid grid-cols-2 gap-3">
@@ -210,7 +208,6 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                     type="number"
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                    disabled={showChannelField}
                     className="input-field"
                   />
                 </div>
@@ -220,7 +217,6 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                     type="date"
                     value={formData.saleDate}
                     onChange={(e) => setFormData({ ...formData, saleDate: e.target.value })}
-                    disabled={showChannelField}
                     className="input-field"
                   />
                 </div>
@@ -231,7 +227,6 @@ export function EditProductForm({ product, userId, onClose }: EditProductFormPro
                   type="text"
                   value={formData.saleLocation}
                   onChange={(e) => setFormData({ ...formData, saleLocation: e.target.value })}
-                  disabled={showChannelField}
                   className="input-field"
                 />
               </div>
