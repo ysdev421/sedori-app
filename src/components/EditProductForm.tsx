@@ -8,12 +8,13 @@ interface EditProductFormProps {
   product: Product;
   userId: string;
   onClose?: () => void;
+  initialShowChannelField?: boolean;
 }
 
-export function EditProductForm({ product, userId, onClose }: EditProductFormProps) {
+export function EditProductForm({ product, userId, onClose, initialShowChannelField = false }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
-  const [showChannelField, setShowChannelField] = useState(false);
+  const [showChannelField, setShowChannelField] = useState(initialShowChannelField);
 
   const [formData, setFormData] = useState({
     productName: product.productName,
