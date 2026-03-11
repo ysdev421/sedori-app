@@ -222,6 +222,28 @@ export async function getJanMasterByCode(
     }
   }
 
+  // Last resort for legacy data: scan jan_master and normalize candidate fields.
+  const scanRows = await getDocs(query(collection(db, 'jan_master'), limit(2000)));
+  for (const d of scanRows.docs as any[]) {
+    const row = d.data() as any;
+    const candidates = [
+      d.id,
+      row?.janCode,
+      row?.jan,
+      row?.code,
+      row?.ean,
+      row?.JAN,
+    ]
+      .map((v) => (typeof v === 'number' ? String(v) : String(v || '')))
+      .map((v) => normalizeJanCode(v))
+      .filter(Boolean);
+    if (!candidates.includes(normalized)) continue;
+
+    const productName = String(row?.productName || row?.name || row?.title || '').trim();
+    if (!productName) continue;
+    return { janCode: normalized, productName };
+  }
+
   return null;
 }
 
@@ -304,7 +326,7 @@ export async function getUserProductNameByJanFromProducts(
   }
 
   // Legacy fallback: scan user's recent products and compare with normalized JAN.
-  const qUser = query(collection(db, 'products'), where('userId', '==', userId), limit(500));
+  const qUser = query(collection(db, 'products'), where('userId', '==', userId), limit(5000));
   const userRows = await getDocs(qUser);
   const found = userRows.docs.find((d: any) => {
     const data = d.data() as any;
