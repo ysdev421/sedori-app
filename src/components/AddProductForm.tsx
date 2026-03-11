@@ -43,7 +43,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [showCostDetails, setShowCostDetails] = useState(false);
-  const [keepOpenAfterSubmit, setKeepOpenAfterSubmit] = useState(false);
   const [kaitoriLookup, setKaitoriLookup] = useState('');
   const [kaitoriCandidates, setKaitoriCandidates] = useState<ProductTemplate[]>([]);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
@@ -295,7 +294,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         purchaseLocation: purchaseLocations[0] || 'メルカリ',
       });
       setJanHint('');
-      if (!keepOpenAfterSubmit) onClose?.();
+      onClose?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');
     }
@@ -560,11 +559,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
               ))}
             </select>
           </div>
-
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={keepOpenAfterSubmit} onChange={(e) => setKeepOpenAfterSubmit(e.target.checked)} />
-            登録後もこの画面を閉じない
-          </label>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
