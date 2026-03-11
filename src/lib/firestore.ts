@@ -162,3 +162,39 @@ export async function getUserProductTemplates(userId: string): Promise<ProductTe
     return b.lastUsedAt.localeCompare(a.lastUsedAt);
   });
 }
+
+const normalizeJanCode = (value: string) => value.replace(/\D/g, '').trim();
+
+export async function getJanMasterByCode(
+  janCode: string
+): Promise<{ janCode: string; productName: string } | null> {
+  const normalized = normalizeJanCode(janCode);
+  if (!normalized) return null;
+
+  const ref = doc(db, 'jan_master', normalized);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data() as any;
+  if (!data?.productName) return null;
+
+  return {
+    janCode: normalized,
+    productName: String(data.productName),
+  };
+}
+
+export async function upsertJanMaster(data: { janCode?: string; productName: string }): Promise<void> {
+  const normalized = normalizeJanCode(data.janCode || '');
+  const productName = data.productName.trim();
+  if (!normalized || !productName) return;
+
+  await setDoc(
+    doc(db, 'jan_master', normalized),
+    {
+      janCode: normalized,
+      productName,
+      updatedAt: Timestamp.now(),
+    },
+    { merge: true }
+  );
+}

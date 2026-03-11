@@ -1,9 +1,15 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Loader, Plus, X } from 'lucide-react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, Loader, Plus, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
-import { getUserProductTemplates, upsertProductTemplate } from '@/lib/firestore';
+import {
+  getJanMasterByCode,
+  getUserProductTemplates,
+  upsertJanMaster,
+  upsertProductTemplate,
+} from '@/lib/firestore';
 import { useStore } from '@/lib/store';
 import type { ProductTemplate } from '@/types';
+import { JanScannerModal } from '@/components/JanScannerModal';
 
 interface AddProductFormProps {
   userId: string;
@@ -12,7 +18,10 @@ interface AddProductFormProps {
   lockChannel?: boolean;
 }
 
+const normalizeJanCode = (value: string) => value.replace(/\D/g, '').trim();
+
 export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockChannel = false }: AddProductFormProps) {
+  const lookupSeqRef = useRef(0);
   const [formData, setFormData] = useState({
     janCode: '',
     productName: '',
@@ -25,6 +34,10 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
   });
 
   const [error, setError] = useState('');
+  const [janHint, setJanHint] = useState('');
+  const [janLookupLoading, setJanLookupLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
   const { createProduct } = useProducts(userId);
   const loading = useStore((state) => state.loading);
@@ -45,13 +58,70 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     setFormData((prev) => ({ ...prev, channel: defaultChannel }));
   }, [defaultChannel]);
 
+  useEffect(() => {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(ua);
+    const hasCameraApi =
+      typeof navigator !== 'undefined' &&
+      typeof window !== 'undefined' &&
+      !!navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === 'function';
+
+    setMobileCameraEnabled(isMobile && hasCameraApi);
+  }, []);
+
+  const fillProductNameByJan = async (janInput: string) => {
+    const janCode = normalizeJanCode(janInput);
+    setFormData((prev) => ({ ...prev, janCode }));
+    setJanHint('');
+
+    if (!janCode) return;
+
+    const template = templates.find((t) => normalizeJanCode(t.janCode || '') === janCode);
+    if (template?.productName) {
+      setFormData((prev) => ({
+        ...prev,
+        janCode,
+        productName: template.productName,
+        purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
+        channel: lockChannel ? defaultChannel : template.channel === 'kaitori' ? 'kaitori' : 'ebay',
+        purchasePrice:
+          typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
+        point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
+      }));
+      setJanHint('過去データから商品名を補完しました');
+      return;
+    }
+
+    if (janCode.length < 8) return;
+
+    const seq = ++lookupSeqRef.current;
+    setJanLookupLoading(true);
+    try {
+      const row = await getJanMasterByCode(janCode);
+      if (seq !== lookupSeqRef.current) return;
+      if (row?.productName) {
+        setFormData((prev) => ({ ...prev, janCode, productName: row.productName }));
+        setJanHint('JANマスターから商品名を補完しました');
+      } else {
+        setJanHint('JANマスターに未登録です。商品名を入力してください');
+      }
+    } catch {
+      if (seq === lookupSeqRef.current) {
+        setJanHint('JAN照会に失敗しました。商品名を入力してください');
+      }
+    } finally {
+      if (seq === lookupSeqRef.current) setJanLookupLoading(false);
+    }
+  };
+
   const applyTemplate = (template: ProductTemplate) => {
     setFormData((prev) => ({
       ...prev,
       janCode: template.janCode || prev.janCode,
       productName: template.productName || prev.productName,
       purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
-      channel: template.channel === 'kaitori' ? 'kaitori' : 'ebay',
+      channel: lockChannel ? defaultChannel : template.channel === 'kaitori' ? 'kaitori' : 'ebay',
       purchasePrice:
         typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
       point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
@@ -103,6 +173,11 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         point,
       });
 
+      await upsertJanMaster({
+        janCode: formData.janCode.trim() || undefined,
+        productName: formData.productName,
+      });
+
       setFormData({
         janCode: '',
         productName: '',
@@ -113,6 +188,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         purchaseDate: new Date().toISOString().split('T')[0],
         purchaseLocation: 'メルカリ',
       });
+      setJanHint('');
       onClose?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');
@@ -132,18 +208,36 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">JAN</label>
-            <input
-              type="text"
-              value={formData.janCode}
-              onChange={(e) => {
-                const value = e.target.value;
-                setFormData({ ...formData, janCode: value });
-                const matched = templates.find((t) => t.janCode && t.janCode === value.trim());
-                if (matched) applyTemplate(matched);
-              }}
-              className="input-field"
-              placeholder="例: 4901234567890"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={formData.janCode}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData((prev) => ({ ...prev, janCode: value }));
+                }}
+                onBlur={() => fillProductNameByJan(formData.janCode)}
+                className="input-field"
+                placeholder="例: 4901234567890"
+                inputMode="numeric"
+              />
+              {mobileCameraEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition inline-flex items-center gap-1.5"
+                  title="カメラで読み取り"
+                >
+                  <Camera className="w-4 h-4" />
+                  読取
+                </button>
+              )}
+            </div>
+            {(janHint || janLookupLoading) && (
+              <p className={`mt-1 text-xs ${janLookupLoading ? 'text-slate-500' : 'text-slate-600'}`}>
+                {janLookupLoading ? 'JANを照会中...' : janHint}
+              </p>
+            )}
           </div>
 
           <div>
@@ -258,6 +352,16 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
           </button>
         </form>
       </div>
+
+      {showScanner && (
+        <JanScannerModal
+          onClose={() => setShowScanner(false)}
+          onDetected={(code) => {
+            setShowScanner(false);
+            fillProductNameByJan(code);
+          }}
+        />
+      )}
     </div>
   );
 }
