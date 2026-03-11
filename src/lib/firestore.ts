@@ -201,8 +201,8 @@ async function findByNormalizedJanInCollection(
       const row = d.data() as any;
       const candidates =
         collectionName === 'jan_master'
-          ? [d.id, row?.janCode, row?.jan, row?.code, row?.ean, row?.JAN]
-          : [row?.janCode, row?.jan, row?.code, row?.ean, row?.JAN];
+          ? [d.id, row?.janCode, row?.jan_code, row?.barcode, row?.jan, row?.code, row?.ean, row?.JAN]
+          : [row?.janCode, row?.jan_code, row?.barcode, row?.jan, row?.code, row?.ean, row?.JAN];
       const hit = candidates
         .map((v) => (typeof v === 'number' ? String(v) : String(v || '')))
         .map((v) => normalizeJanCode(v))
@@ -210,9 +210,47 @@ async function findByNormalizedJanInCollection(
         .includes(normalizedJan);
       if (!hit) continue;
 
-      const productName = String(row?.productName || row?.name || row?.title || '').trim();
+      const productName = String(row?.productName || row?.itemName || row?.name || row?.title || '').trim();
       if (!productName) continue;
       return { janCode: normalizedJan, productName };
+    }
+
+    if (snap.size < pageSize) return null;
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+}
+
+export async function getUserTemplateByJanFromProducts(
+  userId: string,
+  janCode: string
+): Promise<{ janCode: string; productName: string } | null> {
+  const normalized = normalizeJanCode(janCode);
+  if (!userId || !normalized) return null;
+
+  const pageSize = 500;
+  let lastDoc: any = null;
+  while (true) {
+    const constraints: any[] = [where('userId', '==', userId)];
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+    constraints.push(limit(pageSize));
+
+    const q = query(collection(db, 'product_templates'), ...constraints);
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+
+    for (const d of snap.docs as any[]) {
+      const row = d.data() as any;
+      const candidates = [row?.janCode, row?.jan_code, row?.barcode, row?.jan, row?.code, row?.ean, row?.JAN];
+      const hit = candidates
+        .map((v) => (typeof v === 'number' ? String(v) : String(v || '')))
+        .map((v) => normalizeJanCode(v))
+        .filter(Boolean)
+        .includes(normalized);
+      if (!hit) continue;
+
+      const productName = String(row?.productName || row?.itemName || row?.name || row?.title || '').trim();
+      if (!productName) continue;
+      return { janCode: normalized, productName };
     }
 
     if (snap.size < pageSize) return null;

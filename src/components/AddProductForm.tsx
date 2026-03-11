@@ -4,6 +4,7 @@ import { useProducts } from '@/hooks/useProducts';
 import {
   getJanMasterByCode,
   getUserProductNameByJanFromProducts,
+  getUserTemplateByJanFromProducts,
   getUserJanUsageByCode,
   getUserPurchaseLocations,
   getUserProductTemplates,
@@ -148,6 +149,14 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
       if (userUsage?.productName) {
         setFormData((prev) => ({ ...prev, janCode, productName: userUsage.productName }));
         setJanHint('あなたの利用履歴から商品名を補完しました');
+        return;
+      }
+
+      const fromTemplateStore = await getUserTemplateByJanFromProducts(userId, janCode);
+      if (seq !== lookupSeqRef.current) return;
+      if (fromTemplateStore?.productName) {
+        setFormData((prev) => ({ ...prev, janCode, productName: fromTemplateStore.productName }));
+        setJanHint('既存テンプレートから商品名を補完しました');
         return;
       }
 
