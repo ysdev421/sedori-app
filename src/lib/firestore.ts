@@ -8,6 +8,7 @@
   limit,
   query,
   setDoc,
+  startAfter,
   Timestamp,
   updateDoc,
   where,
@@ -176,6 +177,49 @@ export async function getUserProductTemplates(userId: string): Promise<ProductTe
 
 const normalizeJanCode = (value: string) => value.replace(/\D/g, '').trim();
 
+async function findByNormalizedJanInCollection(
+  collectionName: 'jan_master' | 'products',
+  normalizedJan: string,
+  userId?: string
+): Promise<any | null> {
+  const pageSize = 500;
+  let lastDoc: any = null;
+
+  while (true) {
+    const constraints: any[] = [];
+    if (collectionName === 'products' && userId) {
+      constraints.push(where('userId', '==', userId));
+    }
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+    constraints.push(limit(pageSize));
+
+    const q = query(collection(db, collectionName), ...constraints);
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+
+    for (const d of snap.docs as any[]) {
+      const row = d.data() as any;
+      const candidates =
+        collectionName === 'jan_master'
+          ? [d.id, row?.janCode, row?.jan, row?.code, row?.ean, row?.JAN]
+          : [row?.janCode, row?.jan, row?.code, row?.ean, row?.JAN];
+      const hit = candidates
+        .map((v) => (typeof v === 'number' ? String(v) : String(v || '')))
+        .map((v) => normalizeJanCode(v))
+        .filter(Boolean)
+        .includes(normalizedJan);
+      if (!hit) continue;
+
+      const productName = String(row?.productName || row?.name || row?.title || '').trim();
+      if (!productName) continue;
+      return { janCode: normalizedJan, productName };
+    }
+
+    if (snap.size < pageSize) return null;
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+}
+
 export async function getJanMasterByCode(
   janCode: string
 ): Promise<{ janCode: string; productName: string } | null> {
@@ -222,29 +266,7 @@ export async function getJanMasterByCode(
     }
   }
 
-  // Last resort for legacy data: scan jan_master and normalize candidate fields.
-  const scanRows = await getDocs(query(collection(db, 'jan_master'), limit(2000)));
-  for (const d of scanRows.docs as any[]) {
-    const row = d.data() as any;
-    const candidates = [
-      d.id,
-      row?.janCode,
-      row?.jan,
-      row?.code,
-      row?.ean,
-      row?.JAN,
-    ]
-      .map((v) => (typeof v === 'number' ? String(v) : String(v || '')))
-      .map((v) => normalizeJanCode(v))
-      .filter(Boolean);
-    if (!candidates.includes(normalized)) continue;
-
-    const productName = String(row?.productName || row?.name || row?.title || '').trim();
-    if (!productName) continue;
-    return { janCode: normalized, productName };
-  }
-
-  return null;
+  return findByNormalizedJanInCollection('jan_master', normalized);
 }
 
 export async function upsertJanMaster(data: { janCode?: string; productName: string }): Promise<void> {
@@ -325,21 +347,7 @@ export async function getUserProductNameByJanFromProducts(
     }
   }
 
-  // Legacy fallback: scan user's recent products and compare with normalized JAN.
-  const qUser = query(collection(db, 'products'), where('userId', '==', userId), limit(5000));
-  const userRows = await getDocs(qUser);
-  const found = userRows.docs.find((d: any) => {
-    const data = d.data() as any;
-    const raw = typeof data?.janCode === 'number' ? String(data.janCode) : String(data?.janCode || '');
-    return normalizeJanCode(raw) === normalized;
-  });
-  if (!found) return null;
-  const foundData = found.data() as any;
-  if (!foundData?.productName) return null;
-  return {
-    janCode: normalized,
-    productName: String(foundData.productName),
-  };
+  return findByNormalizedJanInCollection('products', normalized, userId);
 }
 
 export async function upsertUserJanUsage(
