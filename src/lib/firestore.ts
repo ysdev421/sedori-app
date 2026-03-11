@@ -196,14 +196,33 @@ export async function getJanMasterByCode(
 
   const q = query(collection(db, 'jan_master'), where('janCode', '==', normalized), limit(1));
   const rows = await getDocs(q);
-  if (rows.empty) return null;
-  const row = rows.docs[0].data() as any;
-  if (!row?.productName) return null;
+  if (!rows.empty) {
+    const row = rows.docs[0].data() as any;
+    if (row?.productName) {
+      return {
+        janCode: normalized,
+        productName: String(row.productName),
+      };
+    }
+  }
 
-  return {
-    janCode: normalized,
-    productName: String(row.productName),
-  };
+  // Backward compatibility: legacy rows may store janCode as number.
+  const numericJan = Number(normalized);
+  if (Number.isFinite(numericJan)) {
+    const qNum = query(collection(db, 'jan_master'), where('janCode', '==', numericJan), limit(1));
+    const rowsNum = await getDocs(qNum);
+    if (!rowsNum.empty) {
+      const rowNum = rowsNum.docs[0].data() as any;
+      if (rowNum?.productName) {
+        return {
+          janCode: normalized,
+          productName: String(rowNum.productName),
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 export async function upsertJanMaster(data: { janCode?: string; productName: string }): Promise<void> {
@@ -255,13 +274,32 @@ export async function getUserProductNameByJanFromProducts(
     limit(1)
   );
   const rows = await getDocs(q);
-  if (rows.empty) return null;
-  const row = rows.docs[0].data() as any;
-  if (!row?.productName) return null;
+  if (!rows.empty) {
+    const row = rows.docs[0].data() as any;
+    if (row?.productName) {
+      return {
+        janCode: normalized,
+        productName: String(row.productName),
+      };
+    }
+  }
+
+  const numericJan = Number(normalized);
+  if (!Number.isFinite(numericJan)) return null;
+  const qNum = query(
+    collection(db, 'products'),
+    where('userId', '==', userId),
+    where('janCode', '==', numericJan),
+    limit(1)
+  );
+  const rowsNum = await getDocs(qNum);
+  if (rowsNum.empty) return null;
+  const rowNum = rowsNum.docs[0].data() as any;
+  if (!rowNum?.productName) return null;
 
   return {
     janCode: normalized,
-    productName: String(row.productName),
+    productName: String(rowNum.productName),
   };
 }
 
