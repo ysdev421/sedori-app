@@ -42,6 +42,8 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
   const [janLookupLoading, setJanLookupLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
+  const [kaitoriLookup, setKaitoriLookup] = useState('');
+  const [kaitoriCandidates, setKaitoriCandidates] = useState<ProductTemplate[]>([]);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
   const { createProduct } = useProducts(userId);
@@ -168,6 +170,35 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     }));
   };
 
+  const resolveKaitoriLookup = async (keywordInput: string) => {
+    const keyword = keywordInput.trim();
+    setKaitoriCandidates([]);
+    if (!keyword) return;
+
+    const normalized = normalizeJanCode(keyword);
+    if (normalized.length >= 8) {
+      await fillProductNameByJan(normalized);
+      return;
+    }
+
+    const hits = templates
+      .filter((t) => t.productName.toLowerCase().includes(keyword.toLowerCase()))
+      .slice(0, 5);
+    setKaitoriCandidates(hits);
+
+    if (hits.length === 1) {
+      applyTemplate(hits[0]);
+      setJanHint('候補を1件適用しました');
+      return;
+    }
+
+    if (hits.length === 0) {
+      setJanHint('候補が見つかりません。別の商品名かJANで試してください');
+    } else {
+      setJanHint('候補から商品を選択してください');
+    }
+  };
+
   const candidateTemplates = useMemo(() => {
     const janQuery = formData.janCode.trim();
     const nameQuery = formData.productName.trim().toLowerCase();
@@ -189,12 +220,8 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     try {
       const normalizedJan = normalizeJanCode(formData.janCode);
       if (isKaitori) {
-        if (!normalizedJan) {
-          setError('買取流しはJANコード必須です');
-          return;
-        }
         if (!formData.productName.trim()) {
-          setError('JANから商品名を特定できません。別のJANで試してください');
+          setError('買取流しは商品名またはJANで候補を選択してください');
           return;
         }
       }
@@ -268,21 +295,27 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         <form onSubmit={handleSubmit} className="space-y-4">
           {isKaitori && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">JAN *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">商品名 or JAN検索 *</label>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  value={formData.janCode}
+                  value={kaitoriLookup}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setFormData((prev) => ({ ...prev, janCode: value }));
+                    setKaitoriLookup(value);
                   }}
-                  onBlur={() => fillProductNameByJan(formData.janCode)}
+                  onBlur={() => resolveKaitoriLookup(kaitoriLookup)}
                   className="input-field"
-                  placeholder="例: 4901234567890"
-                  inputMode="numeric"
+                  placeholder="例: 4901234567890 / 商品名"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => resolveKaitoriLookup(kaitoriLookup)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap"
+                >
+                  検索
+                </button>
                 {mobileCameraEnabled && (
                   <button
                     type="button"
@@ -299,6 +332,24 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
                 <p className={`mt-1 text-xs ${janLookupLoading ? 'text-slate-500' : 'text-slate-600'}`}>
                   {janLookupLoading ? 'JANを照会中...' : janHint}
                 </p>
+              )}
+              {kaitoriCandidates.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {kaitoriCandidates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        applyTemplate(t);
+                        setKaitoriCandidates([]);
+                        setJanHint('候補を適用しました');
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
+                    >
+                      {t.productName}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}
