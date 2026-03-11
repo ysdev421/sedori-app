@@ -209,6 +209,54 @@ export async function upsertJanMaster(data: { janCode?: string; productName: str
   );
 }
 
+export async function getUserJanUsageByCode(
+  userId: string,
+  janCode: string
+): Promise<{ janCode: string; productName: string } | null> {
+  const normalized = normalizeJanCode(janCode);
+  if (!userId || !normalized) return null;
+
+  const ref = doc(db, 'user_jan_usage', `${userId}_${normalized}`);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data() as any;
+  if (!data?.productName) return null;
+
+  return {
+    janCode: normalized,
+    productName: String(data.productName),
+  };
+}
+
+export async function upsertUserJanUsage(
+  userId: string,
+  data: { janCode?: string; productName: string; channel?: Product['channel'] }
+): Promise<void> {
+  const normalized = normalizeJanCode(data.janCode || '');
+  const productName = data.productName.trim();
+  if (!userId || !normalized || !productName) return;
+
+  const ref = doc(db, 'user_jan_usage', `${userId}_${normalized}`);
+  const snap = await getDoc(ref);
+  const now = Timestamp.now();
+  const currentUsedCount = snap.exists() ? Number(snap.data().usedCount || 0) : 0;
+
+  await setDoc(
+    ref,
+    {
+      userId,
+      janCode: normalized,
+      productName,
+      usedCount: currentUsedCount + 1,
+      lastUsedChannel: data.channel || null,
+      createdAt: snap.exists() ? snap.data().createdAt : now,
+      updatedAt: now,
+      lastUsedAt: now,
+    },
+    { merge: true }
+  );
+}
+
 const DEFAULT_PURCHASE_LOCATIONS = ['メルカリ'] as const;
 
 export async function getUserPurchaseLocations(userId: string): Promise<string[]> {

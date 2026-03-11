@@ -3,10 +3,12 @@ import { Camera, Loader, Plus, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import {
   getJanMasterByCode,
+  getUserJanUsageByCode,
   getUserPurchaseLocations,
   getUserProductTemplates,
   upsertJanMaster,
   upsertProductTemplate,
+  upsertUserJanUsage,
 } from '@/lib/firestore';
 import { useStore } from '@/lib/store';
 import type { ProductTemplate } from '@/types';
@@ -140,6 +142,14 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     const seq = ++lookupSeqRef.current;
     setJanLookupLoading(true);
     try {
+      const userUsage = await getUserJanUsageByCode(userId, janCode);
+      if (seq !== lookupSeqRef.current) return;
+      if (userUsage?.productName) {
+        setFormData((prev) => ({ ...prev, janCode, productName: userUsage.productName }));
+        setJanHint('あなたの利用履歴から商品名を補完しました');
+        return;
+      }
+
       const row = await getJanMasterByCode(janCode);
       if (seq !== lookupSeqRef.current) return;
       if (row?.productName) {
@@ -272,6 +282,11 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
       await upsertJanMaster({
         janCode: normalizedJan || undefined,
         productName: formData.productName,
+      });
+      await upsertUserJanUsage(userId, {
+        janCode: normalizedJan || undefined,
+        productName: formData.productName,
+        channel: formData.channel,
       });
 
       try {

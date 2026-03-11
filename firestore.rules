@@ -44,5 +44,12 @@ service cloud.firestore {
         && request.resource.data.productName is string;
       allow delete: if false;
     }
+
+    match /user_jan_usage/{docId} {
+      allow read, create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
   }
 }
