@@ -178,7 +178,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
     const init: Record<string, string> = {};
     for (const i of items) {
-      const unitCost = Math.max(0, i.purchasePrice + (i.purchasePointUsed || 0) - (i.couponDiscount || 0) - (i.instantPointUse || 0) - i.point);
+      const unitCost = Math.max(0, i.purchasePrice + (i.purchasePointUsed || 0) + (i.couponDiscount || 0) + (i.instantPointUse || 0) - i.point);
       init[i.id] = String(unitCost * i.quantity);
     }
 

@@ -264,12 +264,12 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                       const coupon = parseFloat(formData.couponDiscount) || 0;
                       const instant = parseFloat(formData.instantPointUse) || 0;
                       const earned = parseFloat(formData.point) || 0;
-                      return `${purchase + used - coupon - instant - earned} 円`;
+                      return `${purchase + used + coupon + instant - earned} 円`;
                     })()}
                   </span>
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  購入価格 + 支払いP利用 - クーポン値引き - 獲得P今すぐ利用 - 付与ポイント
+                  購入価格 + 支払いP利用 + クーポン値引き + 獲得P今すぐ利用 - 付与ポイント
                 </p>
               </div>
 

@@ -3,14 +3,14 @@
 export function getPurchaseBaseCost(product: Product): number {
   return (
     product.purchasePrice +
-    (product.purchasePointUsed || 0) -
-    (product.couponDiscount || 0) -
+    (product.purchasePointUsed || 0) +
+    (product.couponDiscount || 0) +
     (product.instantPointUse || 0)
   );
 }
 
 export function getEffectiveCost(product: Product): number {
-  return getPurchaseBaseCost(product) - product.point - (product.couponDiscount || 0);
+  return getPurchaseBaseCost(product) - product.point;
 }
 
 export function calculateProfit(product: Product): number {
