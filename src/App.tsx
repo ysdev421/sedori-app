@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { BarChart3, List, Plus, Truck } from 'lucide-react';
+import { BarChart3, ChevronDown, List, Menu, Plus, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -10,21 +10,30 @@ import { ProductList } from '@/components/ProductList';
 import { AddProductForm } from '@/components/AddProductForm';
 import { SaleBatchManager } from '@/components/SaleBatchManager';
 
+type Screen = 'summary' | 'list' | 'sale';
+type SystemType = 'ebay' | 'kaitori';
+
 function App() {
   const { authLoading } = useAuth();
   const user = useStore((state) => state.user);
   const { products, deleteProductData } = useProducts(user?.id || null);
+
   const [showAddForm, setShowAddForm] = useState(false);
-  const [screen, setScreen] = useState<'summary' | 'list' | 'sale'>('list');
-  const [channelFilter, setChannelFilter] = useState<'all' | 'ebay' | 'kaitori'>('all');
+  const [showSystemMenu, setShowSystemMenu] = useState(false);
+  const [activeSystem, setActiveSystem] = useState<SystemType>('ebay');
+  const [screenBySystem, setScreenBySystem] = useState<Record<SystemType, Screen>>({
+    ebay: 'list',
+    kaitori: 'list',
+  });
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
 
-  const filteredProducts =
-    channelFilter === 'all'
-      ? products
-      : channelFilter === 'ebay'
-      ? products.filter((p) => p.channel === 'ebay' || !p.channel)
-      : products.filter((p) => p.channel === channelFilter);
+  const isKaitori = activeSystem === 'kaitori';
+  const currentScreen = screenBySystem[activeSystem];
+  const screen: Screen = !isKaitori && currentScreen === 'sale' ? 'list' : currentScreen;
+
+  const filteredProducts = products.filter((p) =>
+    activeSystem === 'ebay' ? p.channel === 'ebay' || !p.channel : p.channel === 'kaitori'
+  );
 
   const summaryProducts = filteredProducts.filter((p) => {
     if (periodFilter === 'all') return true;
@@ -64,38 +73,59 @@ function App() {
     return <LoginForm />;
   }
 
+  const systemLabel = activeSystem === 'ebay' ? 'eBayシステム' : '買取システム';
+
+  const setScreen = (nextScreen: Screen) => {
+    setScreenBySystem((prev) => ({ ...prev, [activeSystem]: nextScreen }));
+  };
+
+  const switchSystem = (nextSystem: SystemType) => {
+    setActiveSystem(nextSystem);
+    setShowSystemMenu(false);
+    if (nextSystem === 'ebay') {
+      setScreenBySystem((prev) => ({ ...prev, ebay: prev.ebay === 'sale' ? 'list' : prev.ebay }));
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Header userName={user.displayName || user.email} />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28">
-        <section className="mb-6">
-          <div className="glass-panel p-2 inline-flex gap-1">
-            <button
-              onClick={() => setChannelFilter('all')}
-              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
-                channelFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-              }`}
-            >
-              全体
-            </button>
-            <button
-              onClick={() => setChannelFilter('ebay')}
-              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
-                channelFilter === 'ebay' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-              }`}
-            >
-              eBay
-            </button>
-            <button
-              onClick={() => setChannelFilter('kaitori')}
-              className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
-                channelFilter === 'kaitori' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-              }`}
-            >
-              買取流し
-            </button>
-          </div>
+        <section className="mb-5 relative">
+          <button
+            onClick={() => setShowSystemMenu((v) => !v)}
+            className="glass-panel px-4 py-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:bg-white/80 transition"
+          >
+            <Menu className="w-4 h-4" />
+            {systemLabel}
+            <ChevronDown className={`w-4 h-4 transition ${showSystemMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showSystemMenu && (
+            <div className="absolute mt-2 w-64 glass-panel p-2 z-20">
+              <button
+                onClick={() => switchSystem('ebay')}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  activeSystem === 'ebay' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                }`}
+              >
+                eBayシステム
+              </button>
+              <button
+                onClick={() => switchSystem('kaitori')}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  activeSystem === 'kaitori' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+                }`}
+              >
+                買取システム
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section className="mb-5">
+          <div className="text-xs text-soft font-semibold tracking-wide">現在: {activeSystem === 'ebay' ? 'eBay' : '買取流し'}</div>
         </section>
 
         {screen === 'summary' ? (
@@ -148,7 +178,7 @@ function App() {
           </section>
         )}
 
-      {screen !== 'sale' && filteredProducts.length === 0 && (
+        {screen !== 'sale' && filteredProducts.length === 0 && (
           <div className="glass-panel text-center py-10 mt-8">
             <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
             <p className="text-soft text-sm mt-2">右下のボタンから最初の商品を登録してください</p>
@@ -159,7 +189,7 @@ function App() {
       <button
         onClick={() => setShowAddForm(true)}
         className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] sm:bottom-8 sm:right-8 z-30 bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
-        title="商品を追加"
+        title={`${activeSystem === 'ebay' ? 'eBay' : '買取'}の商品を追加`}
       >
         <Plus className="w-7 h-7" />
       </button>
@@ -184,19 +214,23 @@ function App() {
             <List className="w-4 h-4" />
             一覧
           </button>
-          <button
-            onClick={() => setScreen('sale')}
-            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
-              screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-            }`}
-          >
-            <Truck className="w-4 h-4" />
-            一括売却
-          </button>
+          {isKaitori && (
+            <button
+              onClick={() => setScreen('sale')}
+              className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
+                screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+              }`}
+            >
+              <Truck className="w-4 h-4" />
+              一括売却
+            </button>
+          )}
         </div>
       </nav>
 
-      {showAddForm && <AddProductForm userId={user.id} onClose={() => setShowAddForm(false)} />}
+      {showAddForm && (
+        <AddProductForm userId={user.id} defaultChannel={activeSystem} lockChannel onClose={() => setShowAddForm(false)} />
+      )}
     </div>
   );
 }

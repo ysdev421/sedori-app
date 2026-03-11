@@ -8,16 +8,18 @@ import type { ProductTemplate } from '@/types';
 interface AddProductFormProps {
   userId: string;
   onClose?: () => void;
+  defaultChannel?: 'ebay' | 'kaitori';
+  lockChannel?: boolean;
 }
 
-export function AddProductForm({ userId, onClose }: AddProductFormProps) {
+export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockChannel = false }: AddProductFormProps) {
   const [formData, setFormData] = useState({
     janCode: '',
     productName: '',
     quantity: '1',
     purchasePrice: '',
     point: '',
-    channel: 'ebay' as 'ebay' | 'kaitori',
+    channel: defaultChannel as 'ebay' | 'kaitori',
     purchaseDate: new Date().toISOString().split('T')[0],
     purchaseLocation: 'メルカリ',
   });
@@ -38,6 +40,10 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
     };
     loadTemplates();
   }, [userId]);
+
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, channel: defaultChannel }));
+  }, [defaultChannel]);
 
   const applyTemplate = (template: ProductTemplate) => {
     setFormData((prev) => ({
@@ -103,7 +109,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
         quantity: '1',
         purchasePrice: '',
         point: '',
-        channel: 'ebay',
+        channel: defaultChannel,
         purchaseDate: new Date().toISOString().split('T')[0],
         purchaseLocation: 'メルカリ',
       });
@@ -215,6 +221,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
               value={formData.channel}
               onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
               className="input-field"
+              disabled={lockChannel}
             >
               <option value="ebay">eBay</option>
               <option value="kaitori">買取流し</option>
