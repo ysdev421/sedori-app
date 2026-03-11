@@ -187,6 +187,10 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             <span className="font-semibold">+{formatCurrency(product.purchasePointUsed || 0)}</span>
           </p>
           <p className="text-slate-800 whitespace-nowrap">
+            <span className="text-xs text-soft mr-1">クーポン</span>
+            <span className="font-semibold">-{formatCurrency(product.couponDiscount || 0)}</span>
+          </p>
+          <p className="text-slate-800 whitespace-nowrap">
             <span className="text-xs text-soft mr-1">付与P</span>
             <span className="font-semibold">-{formatCurrency(product.point)}</span>
           </p>

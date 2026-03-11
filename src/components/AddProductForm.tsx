@@ -30,6 +30,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     quantity: '1',
     purchasePrice: '',
     purchasePointUsed: '',
+    couponDiscount: '',
     point: '',
     channel: defaultChannel as 'ebay' | 'kaitori',
     purchaseDate: new Date().toISOString().split('T')[0],
@@ -114,6 +115,10 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
           typeof template.lastPurchasePointUsed === 'number'
             ? String(template.lastPurchasePointUsed)
             : prev.purchasePointUsed,
+        couponDiscount:
+          typeof template.lastCouponDiscount === 'number'
+            ? String(template.lastCouponDiscount)
+            : prev.couponDiscount,
         point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
       }));
       setJanHint('過去データから商品名を補完しました');
@@ -155,6 +160,10 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         typeof template.lastPurchasePointUsed === 'number'
           ? String(template.lastPurchasePointUsed)
           : prev.purchasePointUsed,
+      couponDiscount:
+        typeof template.lastCouponDiscount === 'number'
+          ? String(template.lastCouponDiscount)
+          : prev.couponDiscount,
       point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
     }));
   };
@@ -193,6 +202,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
       const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
       const purchasePrice = parseFloat(formData.purchasePrice);
       const purchasePointUsed = parseFloat(formData.purchasePointUsed) || 0;
+      const couponDiscount = parseFloat(formData.couponDiscount) || 0;
       const point = parseFloat(formData.point) || 0;
 
       await createProduct({
@@ -203,6 +213,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         channel: formData.channel,
         purchasePrice,
         purchasePointUsed,
+        couponDiscount,
         point,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
@@ -216,6 +227,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         channel: formData.channel,
         purchasePrice,
         purchasePointUsed,
+        couponDiscount,
         point,
       });
 
@@ -230,6 +242,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         quantity: '1',
         purchasePrice: '',
         purchasePointUsed: '',
+        couponDiscount: '',
         point: '',
         channel: defaultChannel,
         purchaseDate: new Date().toISOString().split('T')[0],
@@ -383,13 +396,23 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">支払いポイント利用</label>
               <input
                 type="number"
                 value={formData.purchasePointUsed}
                 onChange={(e) => setFormData({ ...formData, purchasePointUsed: e.target.value })}
+                className="input-field"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">クーポン値引き</label>
+              <input
+                type="number"
+                value={formData.couponDiscount}
+                onChange={(e) => setFormData({ ...formData, couponDiscount: e.target.value })}
                 className="input-field"
                 placeholder="0"
               />
@@ -413,12 +436,13 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
                 {(() => {
                   const purchase = parseFloat(formData.purchasePrice) || 0;
                   const used = parseFloat(formData.purchasePointUsed) || 0;
+                  const coupon = parseFloat(formData.couponDiscount) || 0;
                   const earned = parseFloat(formData.point) || 0;
-                  return `${purchase + used - earned} 円`;
+                  return `${purchase + used - coupon - earned} 円`;
                 })()}
               </span>
             </p>
-            <p className="text-xs text-slate-500 mt-1">購入価格 + 支払いポイント利用 - 付与ポイント</p>
+            <p className="text-xs text-slate-500 mt-1">購入価格 + 支払いP利用 - クーポン値引き - 付与ポイント</p>
           </div>
 
           <div>

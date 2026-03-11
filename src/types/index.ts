@@ -8,6 +8,7 @@ export interface Product {
   productName: string;
   purchasePrice: number;
   purchasePointUsed?: number;
+  couponDiscount?: number;
   point: number;
   purchaseDate: string;
   purchaseLocation: string;
@@ -28,6 +29,7 @@ export interface ProductTemplate {
   channel?: 'ebay' | 'kaitori' | 'other';
   lastPurchasePrice?: number;
   lastPurchasePointUsed?: number;
+  lastCouponDiscount?: number;
   lastPoint?: number;
   usedCount: number;
   createdAt: string;
