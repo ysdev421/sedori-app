@@ -198,3 +198,40 @@ export async function upsertJanMaster(data: { janCode?: string; productName: str
     { merge: true }
   );
 }
+
+const DEFAULT_PURCHASE_LOCATIONS = ['メルカリ'] as const;
+
+export async function getUserPurchaseLocations(userId: string): Promise<string[]> {
+  const ref = doc(db, 'purchase_location_settings', userId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return [...DEFAULT_PURCHASE_LOCATIONS];
+
+  const data = snap.data() as any;
+  const list = Array.isArray(data?.locations) ? data.locations : [];
+  const cleaned = list
+    .map((v: unknown) => (typeof v === 'string' ? v.trim() : ''))
+    .filter((v: string) => v.length > 0);
+
+  if (cleaned.length === 0) return [...DEFAULT_PURCHASE_LOCATIONS];
+  return Array.from(new Set(cleaned));
+}
+
+export async function upsertUserPurchaseLocations(userId: string, locations: string[]): Promise<void> {
+  const cleaned = Array.from(
+    new Set(
+      locations
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0)
+    )
+  );
+
+  await setDoc(
+    doc(db, 'purchase_location_settings', userId),
+    {
+      userId,
+      locations: cleaned.length > 0 ? cleaned : [...DEFAULT_PURCHASE_LOCATIONS],
+      updatedAt: Timestamp.now(),
+    },
+    { merge: true }
+  );
+}

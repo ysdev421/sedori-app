@@ -3,6 +3,7 @@ import { Camera, Loader, Plus, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import {
   getJanMasterByCode,
+  getUserPurchaseLocations,
   getUserProductTemplates,
   upsertJanMaster,
   upsertProductTemplate,
@@ -39,6 +40,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
+  const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
   const { createProduct } = useProducts(userId);
   const loading = useStore((state) => state.loading);
 
@@ -52,6 +54,25 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
       }
     };
     loadTemplates();
+  }, [userId]);
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const rows = await getUserPurchaseLocations(userId);
+        setPurchaseLocations(rows.length > 0 ? rows : ['メルカリ']);
+        setFormData((prev) => ({
+          ...prev,
+          purchaseLocation:
+            prev.purchaseLocation && rows.includes(prev.purchaseLocation)
+              ? prev.purchaseLocation
+              : rows[0] || 'メルカリ',
+        }));
+      } catch {
+        setPurchaseLocations(['メルカリ']);
+      }
+    };
+    loadLocations();
   }, [userId]);
 
   useEffect(() => {
@@ -186,7 +207,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         point: '',
         channel: defaultChannel,
         purchaseDate: new Date().toISOString().split('T')[0],
-        purchaseLocation: 'メルカリ',
+        purchaseLocation: purchaseLocations[0] || 'メルカリ',
       });
       setJanHint('');
       onClose?.();
@@ -321,13 +342,17 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">購入場所</label>
-            <input
-              type="text"
+            <select
               value={formData.purchaseLocation}
               onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
               className="input-field"
-              placeholder="メルカリ"
-            />
+            >
+              {purchaseLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
           </div>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
