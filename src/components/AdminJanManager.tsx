@@ -28,6 +28,12 @@ const decodeHtml = (value: string) =>
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");
 const cleanText = (value: string) => decodeHtml(value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+const BRAND_PREFIX_RE = /^(SONY|FACEBOOK|META|NINTENDO|MICROSOFT|SEGA|KONAMI|CAPCOM|BANDAI(?:\s+NAMCO)?|SQUARE(?:\s+ENIX)?|ATLUS|HORI)\s*[:\-\/]?\s*/i;
+const normalizeProductName = (value: string) =>
+  cleanText(value)
+    .replace(BRAND_PREFIX_RE, '')
+    .replace(/^\[[^\]]+\]\s*/, '')
+    .trim();
 const toProxyUrl = (url: string) => `https://r.jina.ai/http://${url.replace(/^https?:\/\//, '')}`;
 
 async function fetchText(url: string): Promise<string> {
@@ -72,7 +78,7 @@ function extractRows(htmlOrText: string, sourceUrl: string): JanRow[] {
 
   for (const m of htmlOrText.matchAll(/title=["']([^"']*?)(\d{8,13})[^"']*["']/gi)) {
     const jan = normalizeJanCode(m[2]);
-    const name = cleanText(m[1]).replace(/\d{8,13}/g, '').trim();
+    const name = normalizeProductName(cleanText(m[1]).replace(/\d{8,13}/g, '').trim());
     if (!jan || !name) continue;
     const current = byJan.get(jan);
     if (pickLongerName(current, name)) byJan.set(jan, { janCode: jan, productName: name, url: sourceUrl });
@@ -82,7 +88,7 @@ function extractRows(htmlOrText: string, sourceUrl: string): JanRow[] {
     const jan = normalizeJanCode(m[2]);
     if (!jan) continue;
     const slug = decodeURIComponent(m[1]).replace(/[-_]+/g, ' ').trim();
-    const name = cleanText(slug).replace(/\d{8,13}/g, '').trim();
+    const name = normalizeProductName(cleanText(slug).replace(/\d{8,13}/g, '').trim());
     if (!name) continue;
     const current = byJan.get(jan);
     if (pickLongerName(current, name)) byJan.set(jan, { janCode: jan, productName: name, url: sourceUrl });
@@ -101,7 +107,7 @@ function toValidRows(rows: JanRow[]): JanRow[] {
   const map = new Map<string, JanRow>();
   for (const row of rows) {
     const jan = normalizeJanCode(row.janCode);
-    const name = cleanText(String(row.productName || '')).replace(/\d{8,13}/g, '').trim();
+    const name = normalizeProductName(cleanText(String(row.productName || '')).replace(/\d{8,13}/g, '').trim());
     if (!jan) continue;
     const normalized: JanRow = { janCode: jan, productName: name || '（要確認）', url: row.url };
     const current = map.get(jan);
