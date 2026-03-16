@@ -6,7 +6,12 @@ import { db } from '@/lib/firebase';
 import { upsertJanMaster } from '@/lib/firestore';
 
 type JanRow = { janCode: string; productName: string; url?: string };
-type DiffReport = { newCount: number; updateCount: number };
+type DiffReport = {
+  newCount: number;
+  updateCount: number;
+  newJanCodes: string[];
+  updateJanCodes: string[];
+};
 
 const BASE_URL = 'https://gamekaitori.jp/';
 const MAX_PAGES_HARD = 200;
@@ -146,24 +151,30 @@ function toValidRows(rows: JanRow[]): JanRow[] {
 }
 
 async function buildDiffReport(rows: JanRow[], setProgress?: (v: number) => void): Promise<DiffReport> {
-  if (rows.length === 0) return { newCount: 0, updateCount: 0 };
+  if (rows.length === 0) return { newCount: 0, updateCount: 0, newJanCodes: [], updateJanCodes: [] };
 
   let newCount = 0;
   let updateCount = 0;
+  const newJanCodes: string[] = [];
+  const updateJanCodes: string[] = [];
 
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i];
     const snap = await getDoc(doc(db, 'jan_master', row.janCode));
     if (!snap.exists()) {
       newCount += 1;
+      newJanCodes.push(row.janCode);
     } else {
       const existingName = String((snap.data() as any)?.productName || '').trim();
-      if (existingName !== row.productName) updateCount += 1;
+      if (existingName !== row.productName) {
+        updateCount += 1;
+        updateJanCodes.push(row.janCode);
+      }
     }
     if (setProgress) setProgress(Math.round(((i + 1) / rows.length) * 100));
   }
 
-  return { newCount, updateCount };
+  return { newCount, updateCount, newJanCodes, updateJanCodes };
 }
 
 function downloadCsv(rows: JanRow[]) {
@@ -191,11 +202,8 @@ export function AdminJanManager() {
   const [importProgress, setImportProgress] = useState(0);
   const [log, setLog] = useState('未実行');
   const [robotsNote, setRobotsNote] = useState('');
-  const [diff, setDiff] = useState<DiffReport>({ newCount: 0, updateCount: 0 });
+  const [diff, setDiff] = useState<DiffReport>({ newCount: 0, updateCount: 0, newJanCodes: [], updateJanCodes: [] });
   const [onlyNew, setOnlyNew] = useState(true);
-  const [importQueue, setImportQueue] = useState<string[]>([]);
-  const [currentImportJan, setCurrentImportJan] = useState('');
-  const [importedJanSet, setImportedJanSet] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const validRows = useMemo(
@@ -297,19 +305,12 @@ export function AdminJanManager() {
       } else {
         targets.push(...validRows);
       }
-      setImportQueue(targets.map((t) => t.janCode));
-      setImportedJanSet({});
-      setCurrentImportJan('');
-
       let processed = 0;
       for (const row of targets) {
-        setCurrentImportJan(row.janCode);
         await upsertJanMaster({ janCode: row.janCode, productName: row.productName });
         processed += 1;
-        setImportedJanSet((prev) => ({ ...prev, [row.janCode]: true }));
         setImportProgress(Math.round((processed / Math.max(1, targets.length)) * 100));
       }
-      setCurrentImportJan('');
 
       const report = await recalcDiff(validRows);
       setLog(`取り込み完了: ${processed}件 (新規 ${report?.newCount || 0} / 更新候補 ${report?.updateCount || 0})`);
@@ -317,7 +318,6 @@ export function AdminJanManager() {
     } catch (e) {
       setLog(e instanceof Error ? e.message : '取り込みに失敗しました');
     } finally {
-      setCurrentImportJan('');
       setLoadingImport(false);
     }
   };
@@ -452,25 +452,16 @@ export function AdminJanManager() {
 
       <div className="glass-panel p-5 space-y-2">
         <p className="text-sm text-slate-600">
-          取り込み対象JAN: {importQueue.length}件
-          {currentImportJan ? ` / 処理中: ${currentImportJan}` : ''}
+          取り込み前プレビューJAN: {onlyNew ? diff.newJanCodes.length : validRows.length}件
+          {onlyNew ? '（未登録のみ）' : '（有効全件）'}
         </p>
         <div className="max-h-56 overflow-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-white/60">
-          {importQueue.length === 0 && <p className="text-sm text-slate-500 p-2">まだ取り込みを開始していません</p>}
-          {importQueue.map((jan) => (
-            <div key={jan} className="text-xs text-slate-700 p-1 flex items-center justify-between gap-2">
+          {(onlyNew ? diff.newJanCodes.length === 0 : validRows.length === 0) && (
+            <p className="text-sm text-slate-500 p-2">プレビュー対象がありません（先に抽出またはCSV読込）</p>
+          )}
+          {(onlyNew ? diff.newJanCodes : validRows.map((r) => r.janCode)).map((jan) => (
+            <div key={jan} className="text-xs text-slate-700 p-1">
               <span className="font-semibold">{jan}</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  importedJanSet[jan]
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : currentImportJan === jan
-                      ? 'bg-sky-100 text-sky-700'
-                      : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {importedJanSet[jan] ? '完了' : currentImportJan === jan ? '処理中' : '待機'}
-              </span>
             </div>
           ))}
         </div>
