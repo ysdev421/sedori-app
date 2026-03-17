@@ -83,7 +83,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
 
     return list.sort((a, b) => {
       if (sortKey === 'profitDesc') {
-        return calculateProfit(b) - calculateProfit(a);
+        return calculatePointProfit(b) - calculatePointProfit(a);
       }
       if (sortKey === 'salePriceDesc') {
         return (b.salePrice || 0) - (a.salePrice || 0);
@@ -255,11 +255,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       {product.status === 'sold' && product.salePrice && (
         <div className="pt-2 border-t border-white/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="text-soft">売却 {formatCurrency(product.salePrice)}</span>
-          <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
-            利益 {formatCurrency(calculateProfit(product))}
-          </span>
           <span className={calculatePointProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
-            P利益 {formatCurrency(calculatePointProfit(product))}
+            利益 {formatCurrency(calculatePointProfit(product))}
+          </span>
+          <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
+            P利益 {formatCurrency(calculateProfit(product))}
           </span>
         </div>
       )}
