@@ -42,7 +42,6 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
   const [janLookupLoading, setJanLookupLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
-  const [showCostDetails, setShowCostDetails] = useState(false);
   const [kaitoriLookup, setKaitoriLookup] = useState('');
   const [kaitoriCandidates, setKaitoriCandidates] = useState<ProductTemplate[]>([]);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
@@ -409,10 +408,19 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">購入日</label>
+              <input
+                type="date"
+                value={formData.purchaseDate}
+                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                className="input-field"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">数量 *</label>
-              <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
@@ -421,7 +429,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) - 1)),
                     }))
                   }
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を減らす"
                 >
                   -
@@ -437,7 +445,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
                     })
                   }
                   required
-                  className="input-field text-center"
+                  className="input-field text-center w-14 sm:w-16 px-2"
                   placeholder="1"
                 />
                 <button
@@ -448,7 +456,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) + 1)),
                     }))
                   }
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を増やす"
                 >
                   +
@@ -456,80 +464,61 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">購入金額合計 *</label>
-              <input
-                type="number"
-                value={formData.purchasePrice}
-                onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
-                required
+              <label className="block text-sm font-medium text-gray-700 mb-2">購入場所</label>
+              <select
+                value={formData.purchaseLocation}
+                onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
                 className="input-field"
-                placeholder="0"
-              />
-              {fieldErrors.purchasePrice && <p className="mt-1 text-xs text-rose-600">{fieldErrors.purchasePrice}</p>}
+              >
+                {purchaseLocations.map((location) => (
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowCostDetails((v) => !v)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition text-sm"
-            >
-              {showCostDetails ? '内訳入力を閉じる' : '内訳入力を開く（任意）'}
-            </button>
-
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">付与ポイント</label>
-            <input
-              type="number"
-              value={formData.point}
-              onChange={(e) => setFormData({ ...formData, point: e.target.value })}
-              className="input-field"
-              placeholder="0"
-            />
-          </div>
-
-          <div className="glass-panel p-3 text-sm">
-            <p className="text-slate-700">
-              実質原価:
-              <span className="ml-2 font-bold text-slate-900">
-                {(() => {
-                  const purchase = parseFloat(formData.purchasePrice) || 0;
-                  const earned = parseFloat(formData.point) || 0;
-                  return `${purchase - earned} 円`;
-                })()}
-              </span>
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              購入金額 - 付与ポイント
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">購入日</label>
-            <input
-              type="date"
-              value={formData.purchaseDate}
-              onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-              className="input-field"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">購入場所</label>
-            <select
-              value={formData.purchaseLocation}
-              onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
-              className="input-field"
-            >
-              {purchaseLocations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+          <div className="glass-panel p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">購入金額合計 *</label>
+                <input
+                  type="number"
+                  value={formData.purchasePrice}
+                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                  required
+                  className="input-field"
+                  placeholder="0"
+                />
+                {fieldErrors.purchasePrice && <p className="mt-1 text-xs text-rose-600">{fieldErrors.purchasePrice}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">付与ポイント</label>
+                <input
+                  type="number"
+                  value={formData.point}
+                  onChange={(e) => setFormData({ ...formData, point: e.target.value })}
+                  className="input-field"
+                  placeholder="0"
+                />
+              </div>
+              <div className="rounded-xl bg-white/70 border border-white/70 p-3 text-sm">
+                <p className="text-slate-700">
+                  実質原価:
+                  <span className="ml-2 font-bold text-slate-900">
+                    {(() => {
+                      const purchase = parseFloat(formData.purchasePrice) || 0;
+                      const earned = parseFloat(formData.point) || 0;
+                      return `${purchase - earned} 円`;
+                    })()}
+                  </span>
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  購入金額 - 付与ポイント
+                </p>
+              </div>
+            </div>
           </div>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}

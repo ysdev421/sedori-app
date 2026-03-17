@@ -33,7 +33,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [toDate, setToDate] = useState('');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
   const [sortKey, setSortKey] = useState<SortKey>('purchaseDateDesc');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [showDateRange, setShowDateRange] = useState(false);
 
   useEffect(() => {

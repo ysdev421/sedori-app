@@ -1,5 +1,5 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { BarChart3, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
+﻿import { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { BarChart3, ChevronDown, List, Plus, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -9,8 +9,14 @@ import { addStatusBatchLogToFirestore } from '@/lib/firestore';
 
 const Dashboard = lazy(() => import('@/components/Dashboard').then((m) => ({ default: m.Dashboard })));
 const ProductList = lazy(() => import('@/components/ProductList').then((m) => ({ default: m.ProductList })));
-const AddProductForm = lazy(() => import('@/components/AddProductForm').then((m) => ({ default: m.AddProductForm })));
-const SaleBatchManager = lazy(() => import('@/components/SaleBatchManager').then((m) => ({ default: m.SaleBatchManager })));
+let addProductFormPromise: Promise<typeof import('@/components/AddProductForm')> | null = null;
+const loadAddProductForm = () => {
+  if (!addProductFormPromise) {
+    addProductFormPromise = import('@/components/AddProductForm');
+  }
+  return addProductFormPromise;
+};
+const AddProductForm = lazy(() => loadAddProductForm().then((m) => ({ default: m.AddProductForm })));
 const PurchaseLocationMaster = lazy(() =>
   import('@/components/PurchaseLocationMaster').then((m) => ({ default: m.PurchaseLocationMaster }))
 );
@@ -21,7 +27,7 @@ const AdminJanManager = lazy(() =>
   import('@/components/AdminJanManager').then((m) => ({ default: m.AdminJanManager }))
 );
 
-type Screen = 'summary' | 'list' | 'sale';
+type Screen = 'summary' | 'list';
 type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'adminJanManager';
 
 function App() {
@@ -43,6 +49,14 @@ function App() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showManagementMenu]);
+  useEffect(() => {
+    if (!user) return;
+    const timer = window.setTimeout(() => {
+      void loadAddProductForm();
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [user]);
+
   const [appView, setAppView] = useState<AppView>('system');
   const [screen, setScreen] = useState<Screen>('list');
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
@@ -227,18 +241,14 @@ function App() {
                 <Dashboard products={summaryProducts} showMoM={periodFilter !== 'all'} />
               )}
             </section>
-          ) : screen === 'list' ? (
-            <section>
-              <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
-            </section>
           ) : (
             <section>
-              <SaleBatchManager products={filteredProducts} userId={user.id} />
+              <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
             </section>
           )}
         </Suspense>
 
-        {screen !== 'sale' && filteredProducts.length === 0 && (
+        {filteredProducts.length === 0 && (
           <div className="glass-panel text-center py-10 mt-8">
             <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
             <p className="text-soft text-sm mt-2">右下のボタンから最初の商品を登録してください</p>
@@ -248,6 +258,9 @@ function App() {
 
       <button
         onClick={() => setShowAddForm(true)}
+        onMouseEnter={() => { void loadAddProductForm(); }}
+        onTouchStart={() => { void loadAddProductForm(); }}
+        onFocus={() => { void loadAddProductForm(); }}
         className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] sm:bottom-8 sm:right-8 z-30 bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
         title="商品を追加"
         style={{ display: appView === 'system' ? undefined : 'none' }}
@@ -274,15 +287,6 @@ function App() {
           >
             <List className="w-4 h-4" />
             一覧
-          </button>
-          <button
-            onClick={() => { setAppView('system'); setScreen('sale'); }}
-            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
-              appView === 'system' && screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-            }`}
-          >
-            <Truck className="w-4 h-4" />
-            一括売却
           </button>
         </div>
       </nav>

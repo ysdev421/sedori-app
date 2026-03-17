@@ -84,34 +84,15 @@
 
 @layer utilities {
   .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
+    animation: none;
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.28s ease-out;
+    animation: none;
   }
 
   .text-soft {
     color: var(--ink-soft);
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateY(10px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
 }
