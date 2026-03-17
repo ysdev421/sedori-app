@@ -118,18 +118,18 @@ export function Dashboard({ products, showMoM = true }: DashboardProps) {
     },
     {
       label: '総利益',
-      value: formatCurrency(summary.totalProfit),
-      sub: showMoM ? momText(mom.profit) : null,
-      subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
-      icon: TrendingUp,
-      tone: 'from-emerald-100 to-green-100 text-emerald-700',
-      negative: summary.totalProfit < 0,
-    },
-    {
-      label: 'P利益',
       value: formatCurrency(summary.totalPointProfit),
       sub: showMoM ? momText(mom.pointProfit) : null,
       subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600',
+      icon: TrendingUp,
+      tone: 'from-emerald-100 to-green-100 text-emerald-700',
+      negative: summary.totalPointProfit < 0,
+    },
+    {
+      label: 'P利益',
+      value: formatCurrency(summary.totalProfit),
+      sub: showMoM ? momText(mom.profit) : null,
+      subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600',
       icon: TrendingUp,
       tone: 'from-teal-100 to-emerald-100 text-teal-700',
     },
@@ -145,7 +145,7 @@ export function Dashboard({ products, showMoM = true }: DashboardProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -225,7 +225,7 @@ export function Dashboard({ products, showMoM = true }: DashboardProps) {
           <div>
             <p className="text-soft">利益率</p>
             <p className="font-bold text-lg text-slate-900">
-              {summary.totalRevenue > 0 ? `${((summary.totalProfit / summary.totalRevenue) * 100).toFixed(1)}%` : '0%'}
+              {summary.totalRevenue > 0 ? `${((summary.totalPointProfit / summary.totalRevenue) * 100).toFixed(1)}%` : '0%'}
             </p>
           </div>
         </div>

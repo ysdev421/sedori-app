@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { deleteUserProductMaster, getUserProductMasters, upsertUserProductMaster } from '@/lib/firestore';
 import type { ProductMaster } from '@/types';
 
@@ -18,6 +18,8 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
+  const [editingJanCode, setEditingJanCode] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +51,15 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
       setError('JANコードと商品名を入力してください');
       return;
     }
+    const existing = masters.find((m) => normalizeJanCode(m.janCode) === normalizedJan);
+    if (!editingMasterId && existing) {
+      setError('このJANはすでに登録済みです。更新したい場合は一覧の編集ボタンから変更してください');
+      return;
+    }
+    if (editingMasterId && normalizeJanCode(editingJanCode) !== normalizedJan) {
+      setError('編集中はJANコードを変更できません。キャンセルして新規登録してください');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -57,7 +68,9 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
       await upsertUserProductMaster(userId, { janCode: normalizedJan, productName: name });
       setJanCode('');
       setProductName('');
-      setMessage('商品マスタを保存しました');
+      setEditingMasterId(null);
+      setEditingJanCode('');
+      setMessage(editingMasterId ? '商品マスタを更新しました' : '商品マスタを保存しました');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -81,6 +94,25 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
     }
   };
 
+  const onStartEdit = (master: ProductMaster) => {
+    const normalizedJan = normalizeJanCode(master.janCode);
+    setEditingMasterId(master.id);
+    setEditingJanCode(normalizedJan);
+    setJanCode(normalizedJan);
+    setProductName(master.productName);
+    setError('');
+    setMessage('');
+  };
+
+  const onCancelEdit = () => {
+    setEditingMasterId(null);
+    setEditingJanCode('');
+    setJanCode('');
+    setProductName('');
+    setError('');
+    setMessage('');
+  };
+
   return (
     <div className="space-y-4">
       <div className="glass-panel p-4 space-y-3">
@@ -92,6 +124,7 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
             onChange={(e) => setJanCode(normalizeJanCode(e.target.value))}
             placeholder="JANコード(8桁/13桁)"
             className="input-field"
+            disabled={!!editingMasterId}
           />
           <input
             value={productName}
@@ -106,8 +139,18 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
             className="btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            保存
+            {editingMasterId ? '更新' : '保存'}
           </button>
+          {editingMasterId && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              disabled={saving}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+            >
+              キャンセル
+            </button>
+          )}
         </div>
         {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{error}</div>}
         {message && <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">{message}</div>}
@@ -133,6 +176,15 @@ export function ProductMasterManager({ userId }: ProductMasterManagerProps) {
               <div key={m.id} className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 flex items-center gap-3">
                 <p className="text-xs text-slate-600 w-36 shrink-0">{m.janCode}</p>
                 <p className="text-sm text-slate-900 min-w-0 flex-1 truncate">{m.productName}</p>
+                <button
+                  type="button"
+                  onClick={() => onStartEdit(m)}
+                  disabled={saving}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+                  title="編集"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
                 <button
                   type="button"
                   onClick={() => onDelete(m.id)}

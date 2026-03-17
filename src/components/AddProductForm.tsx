@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Camera, Loader, Plus, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import {
@@ -119,9 +119,6 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
         janCode,
         productName: master.productName,
         purchaseLocation: template?.purchaseLocation || prev.purchaseLocation,
-        purchasePrice:
-          typeof template?.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
-        point: typeof template?.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
       }));
       setJanHint('商品マスタから商品名を補完しました');
       return;
@@ -138,9 +135,6 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
       janCode: normalizeJanCode(master.janCode),
       productName: master.productName || prev.productName,
       purchaseLocation: template?.purchaseLocation || prev.purchaseLocation,
-      purchasePrice:
-        typeof template?.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
-      point: typeof template?.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
     }));
   };
 
@@ -293,11 +287,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
                   </button>
                 )}
               </div>
-              {(janHint || janLookupLoading) && (
-                <p className={`mt-1 text-xs ${janLookupLoading ? 'text-slate-500' : 'text-slate-600'}`}>
-                  {janLookupLoading ? 'JANを照会中...' : janHint}
-                </p>
-              )}
+              {janHint && <p className="mt-1 text-xs text-slate-600">{janHint}</p>}
               {fieldErrors.janCode && <p className="mt-1 text-xs text-rose-600">{fieldErrors.janCode}</p>}
               <p className="mt-1 text-[11px] text-slate-500">JANは通常 8桁 または 13桁です</p>
               {kaitoriCandidates.length > 0 && (
@@ -307,7 +297,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
                       key={t.id}
                       type="button"
                       onClick={() => {
-                        applyTemplate(t);
+                        applyMaster(t);
                         setKaitoriCandidates([]);
                         setJanHint('候補を適用しました');
                       }}
@@ -322,35 +312,6 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">商品マスタ *</label>
-            <select
-              value={selectedMasterId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setSelectedMasterId(id);
-                const selected = masters.find((m) => m.id === id);
-                if (!selected) return;
-                setFormData((prev) => ({
-                  ...prev,
-                  janCode: normalizeJanCode(selected.janCode),
-                  productName: selected.productName,
-                }));
-                void fillProductNameByJan(selected.janCode);
-              }}
-              className="input-field"
-              required
-            >
-              <option value="">商品を選択してください</option>
-              {masters.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.productName} ({m.janCode})
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-slate-500">商品マスタ管理で登録したJAN/商品名のみ選択できます</p>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">商品名 *</label>
             <input
               type="text"
@@ -361,21 +322,6 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
               placeholder="例: チェキフィルム"
             />
             {fieldErrors.productName && <p className="mt-1 text-xs text-rose-600">{fieldErrors.productName}</p>}
-            {!isKaitori && candidateTemplates.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {candidateTemplates.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => applyTemplate(t)}
-                    className="px-2 py-1 rounded-lg text-xs border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
-                    title={t.janCode ? `JAN: ${t.janCode}` : t.productName}
-                  >
-                    {t.productName}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -537,4 +483,5 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
     </div>
   );
 }
+
 

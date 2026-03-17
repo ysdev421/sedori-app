@@ -1,6 +1,12 @@
-import { useMemo, useState } from 'react';
-import { CheckSquare, Loader2 } from 'lucide-react';
-import { confirmSaleBatchInFirestore } from '@/lib/firestore';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CheckSquare, Loader2 } from 'lucide-react';
+import {
+  cancelSaleBatchInFirestore,
+  confirmSaleBatchInFirestore,
+  getUserRecentSaleBatches,
+  type SaleBatchSummary,
+} from '@/lib/firestore';
+import { RichDatePicker } from '@/components/RichDatePicker';
 import { useStore } from '@/lib/store';
 import { formatCurrency, getActualPayment, getEffectiveCost } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -10,19 +16,42 @@ interface SaleBatchManagerProps {
   userId: string;
 }
 
+const SALE_LOCATIONS = ['買取wiki', '買取商店', '森森買取'] as const;
+
 export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const [query, setQuery] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
-  const [saleLocation, setSaleLocation] = useState('買取店');
-  const [receivedCash, setReceivedCash] = useState('');
+  const [saleLocation, setSaleLocation] = useState<(typeof SALE_LOCATIONS)[number]>(SALE_LOCATIONS[0]);
   const [receivedPoint, setReceivedPoint] = useState('');
   const [pointRate, setPointRate] = useState('1');
   const [memo, setMemo] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [productSalePrices, setProductSalePrices] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [cancelingBatchId, setCancelingBatchId] = useState('');
+  const [recentBatches, setRecentBatches] = useState<SaleBatchSummary[]>([]);
+  const [loadingBatches, setLoadingBatches] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [confirmTarget, setConfirmTarget] = useState<SaleBatchSummary | null>(null);
+  const [errorModal, setErrorModal] = useState<{ title: string; detail: string } | null>(null);
   const updateProduct = useStore((state) => state.updateProduct);
+
+  const loadRecentBatches = async () => {
+    setLoadingBatches(true);
+    try {
+      const rows = await getUserRecentSaleBatches(userId, 20);
+      setRecentBatches(rows);
+    } catch {
+      setRecentBatches([]);
+    } finally {
+      setLoadingBatches(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRecentBatches();
+  }, [userId]);
 
   const candidates = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,10 +71,13 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
   const selectedEffectiveCost = selectedProducts.reduce((sum, p) => sum + getEffectiveCost(p), 0);
   const selectedActualCost = selectedProducts.reduce((sum, p) => sum + getActualPayment(p), 0);
-  const receivedCashValue = Math.max(0, Math.round(parseFloat(receivedCash) || 0));
-  const receivedPointValue = Math.max(0, Math.round(parseFloat(receivedPoint) || 0));
+  const basePurchaseAmountValue = selectedProducts.reduce((sum, p) => {
+    const v = Math.max(0, Math.round(parseFloat(productSalePrices[p.id] || '0') || 0));
+    return sum + v;
+  }, 0);
+  const bonusPointValue = Math.max(0, Math.round(parseFloat(receivedPoint) || 0));
   const pointRateValue = Math.max(0, parseFloat(pointRate) || 1);
-  const revenue = receivedCashValue + Math.round(receivedPointValue * pointRateValue);
+  const revenue = basePurchaseAmountValue + Math.round(bonusPointValue * pointRateValue);
   const profit = revenue - selectedEffectiveCost;
   const pointProfit = revenue - selectedActualCost;
 
@@ -53,6 +85,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+    setProductSalePrices((prev) => (prev[id] !== undefined ? prev : { ...prev, [id]: '' }));
   };
 
   const toggleAll = () => {
@@ -60,20 +93,52 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
       setSelectedIds([]);
       return;
     }
-    setSelectedIds(candidates.map((p) => p.id));
+    const ids = candidates.map((p) => p.id);
+    setSelectedIds(ids);
+    setProductSalePrices((prev) => {
+      const next = { ...prev };
+      ids.forEach((id) => {
+        if (next[id] === undefined) next[id] = '';
+      });
+      return next;
+    });
   };
 
   const submit = async () => {
     setError('');
     setMessage('');
     if (selectedIds.length === 0) {
-      setError('売却対象の商品を選択してください');
+      setErrorModal({
+        title: '入力エラー',
+        detail: '売却対象の商品を選択してください。',
+      });
       return;
     }
     if (!saleLocation.trim()) {
-      setError('売却先を入力してください');
+      setErrorModal({
+        title: '入力エラー',
+        detail: '売却先を選択してください。',
+      });
       return;
     }
+    const missing = selectedProducts.filter((p) => {
+      const raw = productSalePrices[p.id];
+      if (raw === undefined || raw.trim() === '') return true;
+      const n = Number(raw);
+      return !Number.isFinite(n) || n < 0;
+    });
+    if (missing.length > 0) {
+      setErrorModal({
+        title: '入力エラー',
+        detail: `選択した商品の買取価格を入力してください（未入力: ${missing.length}件）`,
+      });
+      return;
+    }
+
+    const productBasePrices = selectedProducts.reduce<Record<string, number>>((acc, p) => {
+      acc[p.id] = Math.max(0, Math.round(parseFloat(productSalePrices[p.id] || '0') || 0));
+      return acc;
+    }, {});
 
     setSubmitting(true);
     try {
@@ -82,9 +147,10 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         productIds: selectedIds,
         saleDate,
         saleLocation: saleLocation.trim(),
-        receivedCash: receivedCashValue,
-        receivedPoint: receivedPointValue,
+        receivedCash: basePurchaseAmountValue,
+        receivedPoint: bonusPointValue,
         pointRate: pointRateValue,
+        productBasePrices,
         memo: memo.trim(),
       });
 
@@ -92,14 +158,39 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         updateProduct(p.id, p);
       });
       setSelectedIds([]);
-      setReceivedCash('');
+      setProductSalePrices({});
       setReceivedPoint('');
       setMemo('');
       setMessage(`一括売却を保存しました（${result.updatedProducts.length}件）`);
+      await loadRecentBatches();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '一括売却の保存に失敗しました');
+      setErrorModal({
+        title: '保存エラー',
+        detail: e instanceof Error ? e.message : '一括売却の保存に失敗しました',
+      });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const cancelBatch = async (batch: SaleBatchSummary) => {
+    setError('');
+    setMessage('');
+    setCancelingBatchId(batch.id);
+    try {
+      const result = await cancelSaleBatchInFirestore(userId, batch.id, 'ユーザー操作で取り消し');
+      result.revertedProducts.forEach((p) => {
+        updateProduct(p.id, p);
+      });
+      setMessage(`一括売却を取り消しました（${result.revertedProducts.length}件）`);
+      await loadRecentBatches();
+    } catch (e) {
+      setErrorModal({
+        title: '取り消しエラー',
+        detail: e instanceof Error ? e.message : '一括売却の取り消しに失敗しました',
+      });
+    } finally {
+      setCancelingBatchId('');
     }
   };
 
@@ -109,23 +200,28 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         <h2 className="text-lg font-bold text-slate-900">一括売却登録</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <div>
-            <label className="block text-xs text-slate-600 mb-1">売却日</label>
-            <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="input-field" />
+            <RichDatePicker label="売却日" value={saleDate} onChange={setSaleDate} />
           </div>
           <div>
             <label className="block text-xs text-slate-600 mb-1">売却先</label>
-            <input value={saleLocation} onChange={(e) => setSaleLocation(e.target.value)} className="input-field" placeholder="買取店名" />
+            <select value={saleLocation} onChange={(e) => setSaleLocation(e.target.value as (typeof SALE_LOCATIONS)[number])} className="input-field">
+              {SALE_LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-600 mb-1">受取現金</label>
-            <input type="number" min={0} value={receivedCash} onChange={(e) => setReceivedCash(e.target.value)} className="input-field" placeholder="0" />
+            <label className="block text-xs text-slate-600 mb-1">買取総額</label>
+            <input type="number" min={0} value={basePurchaseAmountValue} readOnly className="input-field bg-slate-50 text-slate-700" />
           </div>
           <div>
-            <label className="block text-xs text-slate-600 mb-1">受取ポイント</label>
+            <label className="block text-xs text-slate-600 mb-1">上乗せポイント</label>
             <input type="number" min={0} value={receivedPoint} onChange={(e) => setReceivedPoint(e.target.value)} className="input-field" placeholder="0" />
           </div>
           <div>
-            <label className="block text-xs text-slate-600 mb-1">ポイント換算(円)</label>
+            <label className="block text-xs text-slate-600 mb-1">上乗せP換算(円)</label>
             <input type="number" min={0} step="0.01" value={pointRate} onChange={(e) => setPointRate(e.target.value)} className="input-field" />
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
@@ -136,10 +232,10 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
         <div className="rounded-xl border border-slate-200 bg-white/70 p-3 text-sm">
           <p className="text-slate-700">選択件数: <span className="font-semibold">{selectedProducts.length}件</span></p>
-          <p className="text-slate-700">受取合計: <span className="font-semibold">{formatCurrency(revenue)}</span></p>
+          <p className="text-slate-700">最終受取: <span className="font-semibold">{formatCurrency(revenue)}</span></p>
           <p className="text-slate-700">利益: <span className={`font-semibold ${profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{formatCurrency(profit)}</span></p>
           <p className="text-slate-700">P利益: <span className={`font-semibold ${pointProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{formatCurrency(pointProfit)}</span></p>
-          <p className="text-xs text-slate-500 mt-1">受取合計 = 現金 + (ポイント × 換算レート)</p>
+          <p className="text-xs text-slate-500 mt-1">最終受取 = 買取総額 + (上乗せポイント × 換算レート)</p>
         </div>
 
         {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
@@ -154,6 +250,42 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckSquare className="w-4 h-4" />}
           一括売却を確定
         </button>
+      </div>
+
+      <div className="glass-panel p-4 space-y-3">
+        <h3 className="text-sm font-bold text-slate-900">最近の一括売却（取り消し）</h3>
+        {loadingBatches ? (
+          <p className="text-sm text-slate-500">読み込み中...</p>
+        ) : recentBatches.length === 0 ? (
+          <p className="text-sm text-slate-500">一括売却履歴はありません</p>
+        ) : (
+          <div className="space-y-2">
+            {recentBatches.map((batch) => (
+              <div key={batch.id} className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-slate-900 truncate">
+                    {batch.saleDate} / {batch.saleLocation} / {batch.itemCount}件
+                  </p>
+                  <p className="text-xs text-slate-600">最終受取: {formatCurrency(batch.totalRevenue)}</p>
+                </div>
+                {batch.canceledAt ? (
+                  <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
+                    取り消し済み
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmTarget(batch)}
+                    disabled={!!cancelingBatchId}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-700 hover:bg-rose-50 transition"
+                  >
+                    {cancelingBatchId === batch.id ? '取り消し中...' : '取り消す'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="glass-panel p-4 space-y-3">
@@ -185,6 +317,19 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
                     <p className="text-xs text-slate-600 mt-1">
                       実質原価 {formatCurrency(getEffectiveCost(p))} ・ 購入合計 {formatCurrency(getActualPayment(p))}
                     </p>
+                    {checked && (
+                      <div className="mt-2 max-w-[180px]">
+                        <label className="block text-[11px] text-slate-600 mb-1">買取価格</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={productSalePrices[p.id] ?? ''}
+                          onChange={(e) => setProductSalePrices((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                          className="input-field h-9 text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
                   </div>
                 </label>
               );
@@ -192,6 +337,72 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
           )}
         </div>
       </div>
+
+      {confirmTarget && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl border border-slate-200 p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-base font-bold text-slate-900">一括売却を取り消しますか？</h4>
+                <p className="text-sm text-slate-600 mt-1">
+                  {confirmTarget.saleDate} / {confirmTarget.saleLocation} / {confirmTarget.itemCount}件
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600">
+              売却情報を外して、対象商品を売却前のステータスに戻します。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmTarget(null)}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const target = confirmTarget;
+                  setConfirmTarget(null);
+                  if (target) await cancelBatch(target);
+                }}
+                className="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
+              >
+                取り消す
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorModal && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl border border-rose-200 p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-base font-bold text-slate-900">{errorModal.title}</h4>
+                <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{errorModal.detail}</p>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setErrorModal(null)}
+                className="px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,9 +8,11 @@ interface ProductListProps {
   products: Product[];
   userId: string;
   onDelete: (id: string) => void;
+  initialListTab?: ListTab;
+  hideTabSelector?: boolean;
 }
 
-type ListTab = 'all' | 'pending' | 'inventory' | 'sold';
+type ListTab = 'all' | 'pending' | 'inventory' | 'sold' | 'janInventory';
 type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
 type PeriodPreset = 'last30' | 'last60' | 'last90' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 
@@ -20,13 +22,14 @@ const toTime = (dateString?: string) => {
   return Number.isNaN(t) ? 0 : t;
 };
 
-export function ProductList({ products, userId, onDelete }: ProductListProps) {
+export function ProductList({ products, userId, onDelete, initialListTab, hideTabSelector = false }: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
   const fmt = (d: Date) => d.toISOString().split('T')[0];
 
-  const [listTab, setListTab] = useState<ListTab>('all');
+  const [listTab, setListTab] = useState<ListTab>(initialListTab || 'all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
@@ -40,9 +43,9 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (!raw) return;
       const saved = JSON.parse(raw) as any;
       if (typeof saved.query === 'string') setQuery(saved.query);
-      if (typeof saved.listTab === 'string') {
+      if (!initialListTab && typeof saved.listTab === 'string') {
         setListTab(saved.listTab as ListTab);
-      } else if (typeof saved.statusFilter === 'string') {
+      } else if (!initialListTab && typeof saved.statusFilter === 'string') {
         setListTab(saved.statusFilter as ListTab);
       }
       if (typeof saved.fromDate === 'string') setFromDate(saved.fromDate);
@@ -52,7 +55,13 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     } catch {
       // noop
     }
-  }, []);
+  }, [initialListTab]);
+
+  useEffect(() => {
+    if (initialListTab) {
+      setListTab(initialListTab);
+    }
+  }, [initialListTab]);
 
   useEffect(() => {
     try {
@@ -69,7 +78,10 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     const q = query.trim().toLowerCase();
 
     const list = products.filter((p) => {
-      if (listTab !== 'all' && p.status !== listTab) {
+      if (listTab === 'janInventory' && p.status !== 'inventory') {
+        return false;
+      }
+      if (listTab !== 'all' && listTab !== 'janInventory' && p.status !== listTab) {
         return false;
       }
 
@@ -77,7 +89,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (toDate && p.purchaseDate > toDate) return false;
 
       if (!q) return true;
-      const haystack = [p.productName, p.purchaseLocation, p.saleLocation || ''].join(' ').toLowerCase();
+      const haystack = [p.productName, p.purchaseLocation, p.saleLocation || '', p.janCode || ''].join(' ').toLowerCase();
       return haystack.includes(q);
     });
 
@@ -136,6 +148,46 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const pending = filtered.filter((p) => p.status === 'pending');
   const sold = filtered.filter((p) => p.status === 'sold');
   const inventory = filtered.filter((p) => p.status === 'inventory');
+  const janInventoryGroups = useMemo(() => {
+    if (listTab !== 'janInventory') return [];
+    const map = new Map<
+      string,
+      {
+        janCode: string;
+        productName: string;
+        quantity: number;
+        itemCount: number;
+        effectiveCost: number;
+        latestPurchaseDate: string;
+      }
+    >();
+
+    filtered.forEach((p) => {
+      const jan = (p.janCode || '').trim();
+      const key = jan || `__NO_JAN__${p.productName}`;
+      const total = Math.max(1, p.quantityTotal ?? 1);
+      const available = Math.max(0, Math.min(total, p.quantityAvailable ?? total));
+      const remainingEffectiveCost = getEffectiveCost(p) * (available / total);
+      const cur = map.get(key) || {
+        janCode: jan,
+        productName: p.productName,
+        quantity: 0,
+        itemCount: 0,
+        effectiveCost: 0,
+        latestPurchaseDate: p.purchaseDate,
+      };
+      cur.quantity += available;
+      cur.itemCount += 1;
+      cur.effectiveCost += remainingEffectiveCost;
+      if (p.purchaseDate > cur.latestPurchaseDate) cur.latestPurchaseDate = p.purchaseDate;
+      map.set(key, cur);
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+      return b.latestPurchaseDate.localeCompare(a.latestPurchaseDate);
+    });
+  }, [filtered, listTab]);
 
   const statusBadge = (status: Product['status']) => {
     if (status === 'sold') return 'bg-emerald-100 text-emerald-700';
@@ -172,29 +224,39 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-slate-900 truncate min-w-0">{product.productName}</h3>
+            <div className="min-w-0 flex items-center gap-1.5">
+              <h3 className="font-semibold text-slate-900 truncate min-w-0" title={product.janCode ? `${product.productName} (JAN:${product.janCode})` : product.productName}>
+                {product.productName}
+                {product.janCode ? ` (JAN:${product.janCode})` : ''}
+              </h3>
+              {product.janCode && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(product.janCode || '');
+                      setCopiedProductId(product.id);
+                      window.setTimeout(() => {
+                        setCopiedProductId((prev) => (prev === product.id ? null : prev));
+                      }, 1200);
+                    } catch {
+                      // noop
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+                  title="JANをコピー"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span className="hidden sm:inline">JANコピー</span>
+                </button>
+              )}
+              {copiedProductId === product.id && (
+                <span className="text-[11px] text-emerald-700 font-semibold shrink-0">コピーしました</span>
+              )}
+            </div>
             <p className="text-[11px] text-slate-600 whitespace-nowrap shrink-0">
-              {product.purchaseLocation} / 数量 {product.quantityAvailable ?? product.quantityTotal ?? 1}/{product.quantityTotal ?? 1}
+              {product.purchaseLocation}
             </p>
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            {product.janCode && (
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(product.janCode || '');
-                  } catch {
-                    // noop
-                  }
-                }}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50"
-                title="JANをコピー"
-              >
-                <Copy className="w-3 h-3" />
-                JANコピー
-              </button>
-            )}
           </div>
         </div>
 
@@ -261,6 +323,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   return (
     <div className="space-y-5">
       <div className="glass-panel p-3 space-y-3">
+        {!hideTabSelector && (
         <div className="flex flex-wrap gap-1">
           <button
             onClick={() => setListTab('all')}
@@ -287,6 +350,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             未着一覧
           </button>
         </div>
+        )}
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -343,7 +407,63 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       <div className="text-sm text-soft px-1">検索結果 {filtered.length} 件</div>
 
       <div className="space-y-6">
-        {sortKey === 'purchaseDateDesc' ? (
+        {listTab === 'janInventory' ? (
+          <section>
+            {janInventoryGroups.length === 0 ? (
+              <p className="text-sm text-slate-500 px-1">JAN在庫はありません</p>
+            ) : (
+              <div className="space-y-2">
+                {janInventoryGroups.map((g) => (
+                  <div key={`${g.janCode}_${g.productName}`} className="card p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{g.productName}</p>
+                        <p className="text-xs text-slate-600">
+                          {g.janCode ? `JAN:${g.janCode}` : 'JAN未設定'}
+                        </p>
+                      </div>
+                      {g.janCode && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(g.janCode);
+                            } catch {
+                              // noop
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+                          title="JANをコピー"
+                        >
+                          <Copy className="w-3 h-3" />
+                          JANコピー
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                      <p className="text-slate-800 whitespace-nowrap">
+                        <span className="text-xs text-soft mr-1">在庫数</span>
+                        <span className="font-semibold">{g.quantity}</span>
+                      </p>
+                      <p className="text-slate-800 whitespace-nowrap">
+                        <span className="text-xs text-soft mr-1">在庫金額(実質)</span>
+                        <span className="font-semibold">{formatCurrency(Math.round(g.effectiveCost))}</span>
+                      </p>
+                      <p className="text-slate-800 whitespace-nowrap">
+                        <span className="text-xs text-soft mr-1">件数</span>
+                        <span className="font-semibold">{g.itemCount}</span>
+                      </p>
+                      <p className="text-slate-800 whitespace-nowrap">
+                        <span className="text-xs text-soft mr-1">最終仕入</span>
+                        <span className="font-semibold">{formatDate(g.latestPurchaseDate)}</span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : sortKey === 'purchaseDateDesc' ? (
           <section>
             <div className="space-y-3">{filtered.map(renderProductCard)}</div>
           </section>

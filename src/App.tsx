@@ -1,5 +1,5 @@
 ﻿import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { BarChart3, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
+import { BarChart3, Boxes, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -31,7 +31,7 @@ const AdminJanManager = lazy(() =>
   import('@/components/AdminJanManager').then((m) => ({ default: m.AdminJanManager }))
 );
 
-type Screen = 'summary' | 'list' | 'sale';
+type Screen = 'summary' | 'list' | 'janInventory' | 'sale';
 type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager';
 
 function App() {
@@ -127,6 +127,39 @@ function App() {
     window.setTimeout(() => setDashboardLoading(false), 250);
   };
 
+  const fmtYmd = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}/${m}/${day}`;
+  };
+
+  const summaryPeriodText = (() => {
+    const now = new Date();
+    if (periodFilter === 'thisMonth') {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1);
+      const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return `${fmtYmd(from)} - ${fmtYmd(to)}`;
+    }
+    if (periodFilter === 'lastMonth') {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0);
+      return `${fmtYmd(from)} - ${fmtYmd(to)}`;
+    }
+    if (periodFilter === 'thisYear') {
+      const from = new Date(now.getFullYear(), 0, 1);
+      const to = new Date(now.getFullYear(), 11, 31);
+      return `${fmtYmd(from)} - ${fmtYmd(to)}`;
+    }
+    if (summaryProducts.length === 0) return 'データなし';
+    const targets = summaryProducts
+      .map((p) => new Date(p.status === 'sold' && p.saleDate ? p.saleDate : p.purchaseDate))
+      .filter((d) => !Number.isNaN(d.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+    if (targets.length === 0) return 'データなし';
+    return `${fmtYmd(targets[0])} - ${fmtYmd(targets[targets.length - 1])}`;
+  })();
+
   return (
     <div className="min-h-screen">
       <Header userName={user.displayName || user.email} />
@@ -209,7 +242,8 @@ function App() {
           ) : screen === 'summary' ? (
             <section>
               <div className="mb-4">
-                <div className="glass-panel p-2 inline-flex gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="glass-panel p-2 inline-flex gap-1">
                   <button
                     onClick={() => changePeriodFilter('thisMonth')}
                     className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition ${
@@ -243,6 +277,10 @@ function App() {
                     全期間
                   </button>
                 </div>
+                  <p className="text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                    集計期間: <span className="font-semibold text-slate-800">{summaryPeriodText}</span>
+                  </p>
+                </div>
               </div>
               {dashboardLoading ? (
                 <div className="glass-panel p-5 space-y-3">
@@ -261,6 +299,16 @@ function App() {
           ) : screen === 'list' ? (
             <section>
               <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
+            </section>
+          ) : screen === 'janInventory' ? (
+            <section>
+              <ProductList
+                products={filteredProducts}
+                userId={user.id}
+                onDelete={deleteProductData}
+                initialListTab="janInventory"
+                hideTabSelector
+              />
             </section>
           ) : (
             <section>
@@ -289,7 +337,7 @@ function App() {
         <Plus className="w-7 h-7" />
       </button>
 
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[94vw] max-w-md">
+      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[96vw] max-w-lg">
         <div className="glass-panel p-1.5 flex items-center gap-1 flex-nowrap">
           <button
             onClick={() => { setAppView('system'); setScreen('summary'); }}
@@ -317,6 +365,15 @@ function App() {
           >
             <Truck className="w-4 h-4" />
             一括売却
+          </button>
+          <button
+            onClick={() => { setAppView('system'); setScreen('janInventory'); }}
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
+              appView === 'system' && screen === 'janInventory' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <Boxes className="w-4 h-4" />
+            JAN在庫
           </button>
         </div>
       </nav>
