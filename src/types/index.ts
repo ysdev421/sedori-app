@@ -2,14 +2,10 @@ export interface Product {
   id: string;
   userId: string;
   janCode?: string;
-  channel?: 'kaitori' | 'other';
   quantityTotal?: number;
   quantityAvailable?: number;
   productName: string;
   purchasePrice: number;
-  purchasePointUsed?: number;
-  couponDiscount?: number;
-  instantPointUse?: number;
   point: number;
   purchaseDate: string;
   purchaseLocation: string;
@@ -27,11 +23,7 @@ export interface ProductTemplate {
   janCode?: string;
   productName: string;
   purchaseLocation?: string;
-  channel?: 'kaitori' | 'other';
   lastPurchasePrice?: number;
-  lastPurchasePointUsed?: number;
-  lastCouponDiscount?: number;
-  lastInstantPointUse?: number;
   lastPoint?: number;
   usedCount: number;
   createdAt: string;

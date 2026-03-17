@@ -54,7 +54,7 @@ function App() {
     .filter(Boolean);
   const isAdmin = adminEmails.length > 0 && adminEmails.includes((user?.email || '').toLowerCase());
 
-  const filteredProducts = products.filter((p) => p.channel === 'kaitori');
+  const filteredProducts = products;
 
   const summaryProducts = filteredProducts.filter((p) => {
     if (periodFilter === 'all') return true;
@@ -289,7 +289,7 @@ function App() {
 
       {showAddForm && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/30" />}>
-          <AddProductForm userId={user.id} defaultChannel="kaitori" lockChannel onClose={() => setShowAddForm(false)} />
+          <AddProductForm userId={user.id} onClose={() => setShowAddForm(false)} />
         </Suspense>
       )}
     </div>

@@ -7,7 +7,6 @@ const baseProduct: Product = {
   userId: 'u1',
   productName: 'test',
   purchasePrice: 71219,
-  purchasePointUsed: 9386,
   point: 9314,
   purchaseDate: '2026-03-11',
   purchaseLocation: 'メルカリ',
@@ -17,21 +16,11 @@ const baseProduct: Product = {
 };
 
 describe('cost formula', () => {
-  it('actual payment uses purchase + used point', () => {
-    expect(getActualPayment(baseProduct)).toBe(80605);
+  it('actual payment equals purchase price', () => {
+    expect(getActualPayment(baseProduct)).toBe(71219);
   });
 
-  it('effective cost uses purchase + used point - earned point', () => {
-    expect(getEffectiveCost(baseProduct)).toBe(71291);
-  });
-
-  it('ignores legacy coupon/instant fields even if they exist', () => {
-    const withLegacy = {
-      ...baseProduct,
-      couponDiscount: 1000,
-      instantPointUse: 9195,
-    };
-    expect(getActualPayment(withLegacy)).toBe(80605);
-    expect(getEffectiveCost(withLegacy)).toBe(71291);
+  it('effective cost = purchase price - earned point', () => {
+    expect(getEffectiveCost(baseProduct)).toBe(71219 - 9314);
   });
 });

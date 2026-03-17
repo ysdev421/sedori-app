@@ -19,23 +19,19 @@ import { JanScannerModal } from '@/components/JanScannerModal';
 interface AddProductFormProps {
   userId: string;
   onClose?: () => void;
-  defaultChannel?: 'kaitori';
-  lockChannel?: boolean;
 }
 
 const normalizeJanCode = (value: string) => value.replace(/\D/g, '').trim();
 
-export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lockChannel = false }: AddProductFormProps) {
+export function AddProductForm({ userId, onClose }: AddProductFormProps) {
   const lookupSeqRef = useRef(0);
-  const isKaitori = defaultChannel === 'kaitori';
+  const isKaitori = true;
   const [formData, setFormData] = useState({
     janCode: '',
     productName: '',
     quantity: '1',
     purchasePrice: '0',
-    purchasePointUsed: '0',
     point: '0',
-    channel: defaultChannel as 'kaitori',
     purchaseDate: new Date().toISOString().split('T')[0],
     purchaseLocation: 'メルカリ',
   });
@@ -97,10 +93,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
   }, [userId]);
 
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, channel: defaultChannel }));
-  }, [defaultChannel]);
-
-  useEffect(() => {
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(ua);
     const hasCameraApi =
@@ -126,13 +118,8 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
         janCode,
         productName: template.productName,
         purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
-        channel: lockChannel ? defaultChannel : 'kaitori',
         purchasePrice:
           typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
-        purchasePointUsed:
-          typeof template.lastPurchasePointUsed === 'number'
-            ? String(template.lastPurchasePointUsed)
-            : prev.purchasePointUsed,
         point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
       }));
       setJanHint('過去データから商品名を補完しました');
@@ -191,13 +178,8 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
       janCode: template.janCode || prev.janCode,
       productName: template.productName || prev.productName,
       purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
-      channel: lockChannel ? defaultChannel : 'kaitori',
       purchasePrice:
         typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
-      purchasePointUsed:
-        typeof template.lastPurchasePointUsed === 'number'
-          ? String(template.lastPurchasePointUsed)
-          : prev.purchasePointUsed,
       point: typeof template.lastPoint === 'number' ? String(template.lastPoint) : prev.point,
     }));
   };
@@ -263,7 +245,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
 
       const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
       const purchasePrice = parseFloat(formData.purchasePrice);
-      const purchasePointUsed = parseFloat(formData.purchasePointUsed) || 0;
       const point = parseFloat(formData.point) || 0;
 
       await createProduct({
@@ -271,9 +252,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
         productName: formData.productName,
         quantityTotal: qty,
         quantityAvailable: qty,
-        channel: formData.channel,
         purchasePrice,
-        purchasePointUsed,
         point,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
@@ -284,9 +263,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
         ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
         purchaseLocation: formData.purchaseLocation,
-        channel: formData.channel,
         purchasePrice,
-        purchasePointUsed,
         point,
       });
 
@@ -297,7 +274,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
       await upsertUserJanUsage(userId, {
         ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
-        channel: formData.channel,
       });
 
       try {
@@ -313,9 +289,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
         productName: '',
         quantity: '1',
         purchasePrice: '0',
-        purchasePointUsed: '0',
         point: '0',
-        channel: defaultChannel,
         purchaseDate: new Date().toISOString().split('T')[0],
         purchaseLocation: purchaseLocations[0] || 'メルカリ',
       });
@@ -504,20 +478,6 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
               {showCostDetails ? '内訳入力を閉じる' : '内訳入力を開く（任意）'}
             </button>
 
-            {showCostDetails && (
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">支払いポイント利用</label>
-                  <input
-                    type="number"
-                    value={formData.purchasePointUsed}
-                    onChange={(e) => setFormData({ ...formData, purchasePointUsed: e.target.value })}
-                    className="input-field"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           <div>
@@ -533,28 +493,17 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
 
           <div className="glass-panel p-3 text-sm">
             <p className="text-slate-700">
-              実支払額:
-              <span className="ml-2 font-bold text-slate-900">
-                {(() => {
-                  const purchase = parseFloat(formData.purchasePrice) || 0;
-                  const used = parseFloat(formData.purchasePointUsed) || 0;
-                  return `${purchase + used} 円`;
-                })()}
-              </span>
-            </p>
-            <p className="text-slate-700">
               実質原価:
               <span className="ml-2 font-bold text-slate-900">
                 {(() => {
                   const purchase = parseFloat(formData.purchasePrice) || 0;
-                  const used = parseFloat(formData.purchasePointUsed) || 0;
                   const earned = parseFloat(formData.point) || 0;
-                  return `${purchase + used - earned} 円`;
+                  return `${purchase - earned} 円`;
                 })()}
               </span>
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              購入金額合計 + 支払いP利用 - 付与ポイント
+              購入金額 - 付与ポイント
             </p>
           </div>
 

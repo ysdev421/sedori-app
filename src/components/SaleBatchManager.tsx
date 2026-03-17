@@ -37,7 +37,6 @@ interface SaleBatchItem {
   productName: string;
   quantity: number;
   purchasePrice: number;
-  purchasePointUsed?: number;
   point: number;
 }
 
@@ -62,7 +61,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
     const totals = confirmItems.reduce(
       (acc, item) => {
         const final = Number(finalPrices[item.id] || 0);
-        const unitCost = Math.max(0, item.purchasePrice + (item.purchasePointUsed || 0) - item.point);
+        const unitCost = Math.max(0, item.purchasePrice - item.point);
         const cost = unitCost * item.quantity;
         acc.revenue += final;
         acc.cost += cost;
@@ -149,7 +148,6 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
           productName: product.productName,
           quantity: qty,
           purchasePrice: product.purchasePrice,
-          purchasePointUsed: product.purchasePointUsed || 0,
           point: product.point,
           status: 'in_progress',
           createdAt: now,
@@ -182,7 +180,6 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         productName: i.productName,
         quantity: Number(i.quantity || 1),
         purchasePrice: Number(i.purchasePrice || 0),
-        purchasePointUsed: Number(i.purchasePointUsed || 0),
         point: Number(i.point || 0),
       }));
 

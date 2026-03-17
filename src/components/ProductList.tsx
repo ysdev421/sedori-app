@@ -77,7 +77,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (toDate && p.purchaseDate > toDate) return false;
 
       if (!q) return true;
-      const haystack = [p.productName, p.purchaseLocation, p.saleLocation || '', p.channel || ''].join(' ').toLowerCase();
+      const haystack = [p.productName, p.purchaseLocation, p.saleLocation || ''].join(' ').toLowerCase();
       return haystack.includes(q);
     });
 
@@ -149,10 +149,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     return '未着';
   };
 
-  const channelLabel = (channel?: Product['channel']) => {
-    if (channel === 'kaitori') return { text: '買取流し', cls: 'bg-purple-100 text-purple-700' };
-    return null;
-  };
 
   const section = (title: string, color: string, items: Product[]) => {
     if (items.length === 0) return null;
@@ -228,10 +224,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             <span className="font-semibold">{formatCurrency(product.purchasePrice)}</span>
           </p>
           <p className="text-slate-800 whitespace-nowrap">
-            <span className="text-xs text-soft mr-1">支払P</span>
-            <span className="font-semibold">+{formatCurrency(product.purchasePointUsed || 0)}</span>
-          </p>
-          <p className="text-slate-800 whitespace-nowrap">
             <span className="text-xs text-soft mr-1">付与P</span>
             <span className="font-semibold">-{formatCurrency(product.point)}</span>
           </p>
@@ -244,11 +236,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
             {statusLabel(product.status)}
           </span>
-          {channelLabel(product.channel) && (
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${channelLabel(product.channel)?.cls}`}>
-              {channelLabel(product.channel)?.text}
-            </span>
-          )}
+
         </div>
       </div>
 

@@ -106,11 +106,7 @@ export async function upsertProductTemplate(
     janCode?: string;
     productName: string;
     purchaseLocation?: string;
-    channel?: Product['channel'];
     purchasePrice?: number;
-    purchasePointUsed?: number;
-    couponDiscount?: number;
-    instantPointUse?: number;
     point?: number;
   }
 ): Promise<void> {
@@ -131,11 +127,7 @@ export async function upsertProductTemplate(
       janCode: data.janCode?.trim() || null,
       productName: data.productName.trim(),
       purchaseLocation: data.purchaseLocation?.trim() || null,
-      channel: data.channel || null,
       lastPurchasePrice: data.purchasePrice ?? null,
-      lastPurchasePointUsed: data.purchasePointUsed ?? null,
-      lastCouponDiscount: data.couponDiscount ?? null,
-      lastInstantPointUse: data.instantPointUse ?? null,
       lastPoint: data.point ?? null,
       usedCount: currentUsedCount + 1,
       createdAt: snap.exists() ? snap.data().createdAt : now,
@@ -158,12 +150,7 @@ export async function getUserProductTemplates(userId: string): Promise<ProductTe
       janCode: data.janCode || undefined,
       productName: data.productName || '',
       purchaseLocation: data.purchaseLocation || undefined,
-      channel: data.channel || undefined,
       lastPurchasePrice: typeof data.lastPurchasePrice === 'number' ? data.lastPurchasePrice : undefined,
-      lastPurchasePointUsed:
-        typeof data.lastPurchasePointUsed === 'number' ? data.lastPurchasePointUsed : undefined,
-      lastCouponDiscount: typeof data.lastCouponDiscount === 'number' ? data.lastCouponDiscount : undefined,
-      lastInstantPointUse: typeof data.lastInstantPointUse === 'number' ? data.lastInstantPointUse : undefined,
       lastPoint: typeof data.lastPoint === 'number' ? data.lastPoint : undefined,
       usedCount: Number(data.usedCount || 0),
       createdAt: toIso(data.createdAt),
@@ -404,7 +391,7 @@ export async function getUserProductNameByJanFromProducts(
 
 export async function upsertUserJanUsage(
   userId: string,
-  data: { janCode?: string; productName: string; channel?: Product['channel'] }
+  data: { janCode?: string; productName: string }
 ): Promise<void> {
   const normalized = normalizeJanCode(data.janCode || '');
   const productName = data.productName.trim();
@@ -422,7 +409,6 @@ export async function upsertUserJanUsage(
       janCode: normalized,
       productName,
       usedCount: currentUsedCount + 1,
-      lastUsedChannel: data.channel || null,
       createdAt: snap.exists() ? snap.data().createdAt : now,
       updatedAt: now,
       lastUsedAt: now,

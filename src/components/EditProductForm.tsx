@@ -15,7 +15,6 @@ interface EditProductFormProps {
 export function EditProductForm({ product, userId, onDelete, onClose }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
-  const [showChannelField, setShowChannelField] = useState(false);
   const [showCostDetails, setShowCostDetails] = useState(false);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
 
@@ -23,9 +22,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     productName: product.productName,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
-    channel: 'kaitori' as 'kaitori',
     purchasePrice: String(product.purchasePrice),
-    purchasePointUsed: String(product.purchasePointUsed || 0),
     point: String(product.point),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
@@ -71,9 +68,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     productName: formData.productName,
     quantityTotal: formData.quantityTotal,
     quantityAvailable: formData.quantityAvailable,
-    channel: formData.channel,
     purchasePrice: formData.purchasePrice,
-    purchasePointUsed: formData.purchasePointUsed,
     point: formData.point,
     purchaseDate: formData.purchaseDate,
     purchaseLocation: formData.purchaseLocation,
@@ -84,9 +79,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     productName: product.productName,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
-    channel: 'kaitori' as 'kaitori',
     purchasePrice: String(product.purchasePrice),
-    purchasePointUsed: String(product.purchasePointUsed || 0),
     point: String(product.point),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
@@ -114,9 +107,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         productName: formData.productName,
         quantityTotal: Math.max(1, parseInt(formData.quantityTotal, 10) || 1),
         quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
-        channel: formData.channel,
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
-        purchasePointUsed: parseFloat(formData.purchasePointUsed) || 0,
         point: parseFloat(formData.point) || 0,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
@@ -161,13 +152,6 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-slate-900">商品を編集</h2>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowChannelField((v) => !v)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-700 hover:bg-slate-50 transition"
-            >
-              {showChannelField ? '販路変更を閉じる' : '販路を変更する'}
-            </button>
             <button onClick={() => (isDirty ? setShowLeaveConfirm(true) : onClose?.())} className="p-2 rounded-lg hover:bg-slate-100">
               <X className="w-5 h-5 text-slate-600" />
             </button>
@@ -175,8 +159,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!showChannelField && (
-            <>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
                 <input
@@ -310,43 +293,23 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
 
                 {showCostDetails && (
                   <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">支払いP利用</label>
-                      <input
-                        type="number"
-                        value={formData.purchasePointUsed}
-                        onChange={(e) => setFormData({ ...formData, purchasePointUsed: e.target.value })}
-                        className="input-field"
-                      />
-                    </div>
                   </div>
                 )}
               </div>
 
               <div className="glass-panel p-3 text-sm">
                 <p className="text-slate-700">
-                  実支払額:
-                  <span className="ml-2 font-bold text-slate-900">
-                    {(() => {
-                      const purchase = parseFloat(formData.purchasePrice) || 0;
-                      const used = parseFloat(formData.purchasePointUsed) || 0;
-                      return `${purchase + used} 円`;
-                    })()}
-                  </span>
-                </p>
-                <p className="text-slate-700">
                   実質原価:
                   <span className="ml-2 font-bold text-slate-900">
                     {(() => {
                       const purchase = parseFloat(formData.purchasePrice) || 0;
-                      const used = parseFloat(formData.purchasePointUsed) || 0;
                       const earned = parseFloat(formData.point) || 0;
-                      return `${purchase + used - earned} 円`;
+                      return `${purchase - earned} 円`;
                     })()}
                   </span>
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  購入金額合計 + 支払いP利用 - 付与ポイント
+                  購入金額 - 付与ポイント
                 </p>
               </div>
 
@@ -362,40 +325,22 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 </div>
                 <div />
               </div>
-            </>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
+            <select
+              value={formData.purchaseLocation}
+              onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
+              className="input-field"
+            >
+              {purchaseLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {showChannelField && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
-              <select
-                value={formData.channel}
-                onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'kaitori' })}
-                className="input-field"
-              >
-                <option value="kaitori">買取流し</option>
-              </select>
-            </div>
-          )}
-
-          {!showChannelField && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
-              <select
-                value={formData.purchaseLocation}
-                onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
-                className="input-field"
-              >
-                {purchaseLocations.map((location) => (
-                  <option key={location} value={location}>
-                    {location}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {!showChannelField && product.status === 'sold' && (
+          {product.status === 'sold' && (
             <div className="glass-panel p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-800">売却情報</p>
               <div className="grid grid-cols-2 gap-3">

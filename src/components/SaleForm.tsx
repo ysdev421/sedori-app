@@ -7,7 +7,6 @@ import {
   calculatePointProfit,
   formatCurrency,
   getEffectiveCost,
-  getActualPayment,
 } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -67,19 +66,13 @@ export function SaleForm({ product, userId, onClose }: SaleFormProps) {
           <p>
             <span className="font-medium">購入金額合計:</span> {formatCurrency(product.purchasePrice)}
           </p>
-          {(product.purchasePointUsed || 0) > 0 && (
-            <p>
-              <span className="font-medium">支払いポイント利用:</span> +{formatCurrency(product.purchasePointUsed || 0)}
-            </p>
-          )}
-          {product.point > 0 && (
+{product.point > 0 && (
             <p>
               <span className="font-medium">付与ポイント:</span> -{formatCurrency(product.point)}
             </p>
           )}
           <p className="mt-1 font-bold text-blue-600">
             実質原価: {formatCurrency(getEffectiveCost(product))}
-            <span className="text-xs text-slate-500 font-normal ml-2">(購入側 {formatCurrency(getActualPayment(product))})</span>
           </p>
         </div>
 
