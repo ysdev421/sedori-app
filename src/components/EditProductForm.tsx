@@ -15,11 +15,11 @@ interface EditProductFormProps {
 export function EditProductForm({ product, userId, onDelete, onClose }: EditProductFormProps) {
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
-  const [showCostDetails, setShowCostDetails] = useState(false);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
 
   const [formData, setFormData] = useState({
     productName: product.productName,
+    status: product.status,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
@@ -66,6 +66,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
 
   const isDirty = JSON.stringify({
     productName: formData.productName,
+    status: formData.status,
     quantityTotal: formData.quantityTotal,
     quantityAvailable: formData.quantityAvailable,
     purchasePrice: formData.purchasePrice,
@@ -77,6 +78,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     saleDate: formData.saleDate,
   }) !== JSON.stringify({
     productName: product.productName,
+    status: product.status,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
@@ -105,6 +107,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     try {
       const updates: Partial<Product> = {
         productName: formData.productName,
+        status: formData.status,
         quantityTotal: Math.max(1, parseInt(formData.quantityTotal, 10) || 1),
         quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
@@ -113,7 +116,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         purchaseLocation: formData.purchaseLocation,
       };
 
-      if (product.status === 'sold') {
+      if (formData.status === 'sold') {
         updates.salePrice = parseFloat(formData.salePrice) || 0;
         updates.saleLocation = formData.saleLocation || '未設定';
         updates.saleDate = formData.saleDate || new Date().toISOString().split('T')[0];
@@ -159,145 +162,184 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
+            <input
+              type="text"
+              required
+              value={formData.productName}
+              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+              className="input-field"
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>
+            {product.status === 'sold' ? (
+              <p className="inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                売却済み（変更不可）
+              </p>
+            ) : (
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: 'pending' })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    formData.status === 'pending' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  未着
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: 'inventory' })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    formData.status === 'inventory' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  在庫
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入日</label>
+              <input
+                type="date"
+                value={formData.purchaseDate}
+                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                className="input-field"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">総数量</label>
+              <div className="inline-flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quantityTotal: String(Math.max(1, (parseInt(prev.quantityTotal, 10) || 1) - 1)),
+                    }))
+                  }
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  title="総数量を減らす"
+                >
+                  -
+                </button>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
+                  value={formData.quantityTotal}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantityTotal: String(Math.max(1, parseInt(e.target.value || '1', 10) || 1)),
+                    })
+                  }
+                  className="input-field text-center w-14 sm:w-16 px-2"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quantityTotal: String(Math.max(1, (parseInt(prev.quantityTotal, 10) || 1) + 1)),
+                    }))
+                  }
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  title="総数量を増やす"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">残数</label>
+              <div className="inline-flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) - 1)),
+                    }))
+                  }
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  title="残数を減らす"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={0}
+                  value={formData.quantityAvailable}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantityAvailable: String(Math.max(0, parseInt(e.target.value || '0', 10) || 0)),
+                    })
+                  }
+                  className="input-field text-center w-14 sm:w-16 px-2"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) + 1)),
+                    }))
+                  }
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  title="残数を増やす"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
+              <select
+                value={formData.purchaseLocation}
+                onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
+                className="input-field"
+              >
+                {purchaseLocations.map((location) => (
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="glass-panel p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">購入金額合計</label>
+                <input
+                  type="number"
                   required
-                  value={formData.productName}
-                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                  value={formData.purchasePrice}
+                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
                   className="input-field"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">総数量</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          quantityTotal: String(Math.max(1, (parseInt(prev.quantityTotal, 10) || 1) - 1)),
-                        }))
-                      }
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-                      title="総数量を減らす"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min={1}
-                      value={formData.quantityTotal}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          quantityTotal: String(Math.max(1, parseInt(e.target.value || '1', 10) || 1)),
-                        })
-                      }
-                      className="input-field text-center"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          quantityTotal: String(Math.max(1, (parseInt(prev.quantityTotal, 10) || 1) + 1)),
-                        }))
-                      }
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-                      title="総数量を増やす"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">残数</label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) - 1)),
-                        }))
-                      }
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-                      title="残数を減らす"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formData.quantityAvailable}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          quantityAvailable: String(Math.max(0, parseInt(e.target.value || '0', 10) || 0)),
-                        })
-                      }
-                      className="input-field text-center"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) + 1)),
-                        }))
-                      }
-                      className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-                      title="残数を増やす"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント</label>
+                <input
+                  type="number"
+                  value={formData.point}
+                  onChange={(e) => setFormData({ ...formData, point: e.target.value })}
+                  className="input-field"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">購入金額合計</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.purchasePrice}
-                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント</label>
-                  <input
-                    type="number"
-                    value={formData.point}
-                    onChange={(e) => setFormData({ ...formData, point: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCostDetails((v) => !v)}
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition text-sm"
-                >
-                  {showCostDetails ? '内訳入力を閉じる' : '内訳入力を開く（任意）'}
-                </button>
-
-                {showCostDetails && (
-                  <div className="grid grid-cols-1 gap-3">
-                  </div>
-                )}
-              </div>
-
-              <div className="glass-panel p-3 text-sm">
+              <div className="rounded-xl bg-white/70 border border-white/70 p-3 text-sm">
                 <p className="text-slate-700">
                   実質原価:
                   <span className="ml-2 font-bold text-slate-900">
@@ -308,39 +350,12 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                     })()}
                   </span>
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  購入金額 - 付与ポイント
-                </p>
+                <p className="text-xs text-slate-500 mt-1">購入金額 - 付与ポイント</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">購入日</label>
-                  <input
-                    type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
-                <div />
-              </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">購入場所</label>
-            <select
-              value={formData.purchaseLocation}
-              onChange={(e) => setFormData({ ...formData, purchaseLocation: e.target.value })}
-              className="input-field"
-            >
-              {purchaseLocations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
+            </div>
           </div>
 
-          {product.status === 'sold' && (
+          {formData.status === 'sold' && (
             <div className="glass-panel p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-800">売却情報</p>
               <div className="grid grid-cols-2 gap-3">
@@ -420,4 +435,3 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     </div>
   );
 }
-

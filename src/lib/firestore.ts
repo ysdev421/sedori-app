@@ -11,6 +11,7 @@
   startAfter,
   Timestamp,
   updateDoc,
+  writeBatch,
   where,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -482,4 +483,158 @@ export async function addStatusBatchLogToFirestore(
     affectedCount: payload.affectedCount,
     createdAt: Timestamp.now(),
   });
+}
+
+const toNumberSafe = (value: unknown, fallback = 0) => {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const distributeByWeights = (total: number, weights: number[]): number[] => {
+  if (weights.length === 0) return [];
+  const roundedTotal = Math.max(0, Math.round(total));
+  const sum = weights.reduce((s, w) => s + Math.max(0, w), 0);
+  if (sum <= 0) {
+    const base = Math.floor(roundedTotal / weights.length);
+    const remain = roundedTotal - base * weights.length;
+    return weights.map((_, idx) => base + (idx < remain ? 1 : 0));
+  }
+
+  const rows = weights.map((w, idx) => {
+    const raw = (roundedTotal * Math.max(0, w)) / sum;
+    const floor = Math.floor(raw);
+    return { idx, floor, frac: raw - floor };
+  });
+  const used = rows.reduce((s, r) => s + r.floor, 0);
+  let remain = roundedTotal - used;
+  rows.sort((a, b) => b.frac - a.frac);
+  for (let i = 0; i < rows.length && remain > 0; i += 1) {
+    rows[i].floor += 1;
+    remain -= 1;
+  }
+  rows.sort((a, b) => a.idx - b.idx);
+  return rows.map((r) => r.floor);
+};
+
+export interface ConfirmSaleBatchInput {
+  userId: string;
+  productIds: string[];
+  saleDate: string;
+  saleLocation: string;
+  receivedCash: number;
+  receivedPoint: number;
+  pointRate: number;
+  memo?: string;
+}
+
+export interface ConfirmSaleBatchResult {
+  batchId: string;
+  updatedProducts: Array<{
+    id: string;
+    salePrice: number;
+    saleDate: string;
+    saleLocation: string;
+    status: 'sold';
+    quantityAvailable: number;
+  }>;
+}
+
+export async function confirmSaleBatchInFirestore(input: ConfirmSaleBatchInput): Promise<ConfirmSaleBatchResult> {
+  const ids = Array.from(new Set(input.productIds.filter(Boolean)));
+  if (ids.length === 0) {
+    throw new Error('売却対象の商品を選択してください');
+  }
+
+  const receivedCash = Math.max(0, Math.round(toNumberSafe(input.receivedCash)));
+  const receivedPoint = Math.max(0, Math.round(toNumberSafe(input.receivedPoint)));
+  const pointRate = Math.max(0, toNumberSafe(input.pointRate, 1));
+  const receivedPointValue = Math.max(0, Math.round(receivedPoint * pointRate));
+  const totalRevenue = receivedCash + receivedPointValue;
+
+  const productRows = await Promise.all(ids.map(async (id) => {
+    const ref = doc(db, 'products', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const row = snap.data() as any;
+    if (row.userId !== input.userId) return null;
+    if (row.status === 'sold') return null;
+    return {
+      id: snap.id,
+      ref,
+      productName: String(row.productName || ''),
+      purchasePrice: toNumberSafe(row.purchasePrice),
+      point: toNumberSafe(row.point),
+      quantityTotal: Math.max(1, toNumberSafe(row.quantityTotal, 1)),
+      quantityAvailable: Math.max(0, toNumberSafe(row.quantityAvailable, toNumberSafe(row.quantityTotal, 1))),
+    };
+  }));
+
+  const targets = productRows.filter(Boolean) as Array<NonNullable<(typeof productRows)[number]>>;
+  if (targets.length === 0) {
+    throw new Error('売却可能な商品が見つかりません');
+  }
+
+  const weights = targets.map((p) => Math.max(0, p.purchasePrice - p.point));
+  const allocatedRevenue = distributeByWeights(totalRevenue, weights);
+  const allocatedCash = distributeByWeights(receivedCash, weights);
+  const allocatedPointValue = distributeByWeights(receivedPointValue, weights);
+
+  const batchDoc = await addDoc(collection(db, 'sale_batches'), {
+    userId: input.userId,
+    saleDate: input.saleDate,
+    saleLocation: input.saleLocation,
+    receivedCash,
+    receivedPoint,
+    pointRate,
+    receivedPointValue,
+    totalRevenue,
+    productIds: targets.map((p) => p.id),
+    itemCount: targets.length,
+    memo: input.memo?.trim() || '',
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+
+  const wb = writeBatch(db);
+  const updatedProducts: ConfirmSaleBatchResult['updatedProducts'] = [];
+  targets.forEach((p, idx) => {
+    const salePrice = allocatedRevenue[idx] || 0;
+    wb.update(p.ref, {
+      status: 'sold',
+      salePrice,
+      saleDate: input.saleDate,
+      saleLocation: input.saleLocation,
+      quantityAvailable: 0,
+      saleBatchId: batchDoc.id,
+      saleBatchCashPortion: allocatedCash[idx] || 0,
+      saleBatchPointValuePortion: allocatedPointValue[idx] || 0,
+      updatedAt: Timestamp.now(),
+    });
+    updatedProducts.push({
+      id: p.id,
+      salePrice,
+      saleDate: input.saleDate,
+      saleLocation: input.saleLocation,
+      status: 'sold',
+      quantityAvailable: 0,
+    });
+  });
+
+  wb.update(doc(db, 'sale_batches', batchDoc.id), {
+    items: targets.map((p, idx) => ({
+      productId: p.id,
+      productName: p.productName,
+      purchasePrice: p.purchasePrice,
+      point: p.point,
+      quantityTotal: p.quantityTotal,
+      quantityAvailable: p.quantityAvailable,
+      allocatedSalePrice: allocatedRevenue[idx] || 0,
+      allocatedCash: allocatedCash[idx] || 0,
+      allocatedPointValue: allocatedPointValue[idx] || 0,
+    })),
+    updatedAt: Timestamp.now(),
+  });
+
+  await wb.commit();
+  return { batchId: batchDoc.id, updatedProducts };
 }

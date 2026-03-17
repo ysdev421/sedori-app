@@ -1,6 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { CircleDollarSign, Copy, Edit, Search, SlidersHorizontal } from 'lucide-react';
-import { SaleForm } from './SaleForm';
+import { Copy, Edit, Search, SlidersHorizontal } from 'lucide-react';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate, getEffectiveCost } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -11,7 +10,7 @@ interface ProductListProps {
   onDelete: (id: string) => void;
 }
 
-type StatusFilter = 'all' | 'pending' | 'inventory' | 'sold';
+type ListTab = 'all' | 'pending' | 'inventory' | 'sold';
 type SortKey = 'purchaseDateDesc' | 'profitDesc' | 'salePriceDesc';
 type PeriodPreset = 'last30' | 'last60' | 'last90' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'all' | 'custom';
 
@@ -22,13 +21,12 @@ const toTime = (dateString?: string) => {
 };
 
 export function ProductList({ products, userId, onDelete }: ProductListProps) {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [query, setQuery] = useState('');
   const fmt = (d: Date) => d.toISOString().split('T')[0];
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  const [listTab, setListTab] = useState<ListTab>('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
@@ -42,7 +40,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (!raw) return;
       const saved = JSON.parse(raw) as any;
       if (typeof saved.query === 'string') setQuery(saved.query);
-      if (typeof saved.statusFilter === 'string') setStatusFilter(saved.statusFilter as StatusFilter);
+      if (typeof saved.listTab === 'string') {
+        setListTab(saved.listTab as ListTab);
+      } else if (typeof saved.statusFilter === 'string') {
+        setListTab(saved.statusFilter as ListTab);
+      }
       if (typeof saved.fromDate === 'string') setFromDate(saved.fromDate);
       if (typeof saved.toDate === 'string') setToDate(saved.toDate);
       if (typeof saved.periodPreset === 'string') setPeriodPreset(saved.periodPreset as PeriodPreset);
@@ -56,20 +58,18 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
     try {
       sessionStorage.setItem(
         'productListFilters',
-        JSON.stringify({ query, statusFilter, fromDate, toDate, periodPreset, sortKey })
+        JSON.stringify({ query, listTab, fromDate, toDate, periodPreset, sortKey })
       );
     } catch {
       // noop
     }
-  }, [query, statusFilter, fromDate, toDate, periodPreset, sortKey]);
+  }, [query, listTab, fromDate, toDate, periodPreset, sortKey]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     const list = products.filter((p) => {
-      if (statusFilter === 'pending') {
-        if (!(p.status === 'pending' || p.status === 'inventory')) return false;
-      } else if (statusFilter !== 'all' && p.status !== statusFilter) {
+      if (listTab !== 'all' && p.status !== listTab) {
         return false;
       }
 
@@ -92,7 +92,7 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
       if (byPurchaseDate !== 0) return byPurchaseDate;
       return toTime(b.createdAt) - toTime(a.createdAt);
     });
-  }, [products, query, statusFilter, fromDate, toDate, sortKey]);
+  }, [products, query, listTab, fromDate, toDate, sortKey]);
 
   const applyPeriodPreset = (preset: PeriodPreset) => {
     setPeriodPreset(preset);
@@ -164,17 +164,20 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   };
 
   const renderProductCard = (product: Product) => (
-    <div key={product.id} className="card p-3 animate-fade-in space-y-2.5">
+    <div key={product.id} className="space-y-1.5">
+      <p className="px-1 text-[11px] text-slate-500">
+        {formatDate(product.purchaseDate)}
+      </p>
+      <div className="card p-2.5 animate-fade-in space-y-2">
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-slate-900 truncate">{product.productName}</h3>
-          <p className="text-xs text-soft mt-0.5">
-            {formatDate(product.purchaseDate)} / {product.purchaseLocation}
-          </p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold bg-sky-100 text-sky-700">
-              数量 {product.quantityAvailable ?? product.quantityTotal ?? 1}/{product.quantityTotal ?? 1}
-            </span>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-slate-900 truncate min-w-0">{product.productName}</h3>
+            <p className="text-[11px] text-slate-600 whitespace-nowrap shrink-0">
+              {product.purchaseLocation} / 数量 {product.quantityAvailable ?? product.quantityTotal ?? 1}/{product.quantityTotal ?? 1}
+            </p>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1.5">
             {product.janCode && (
               <button
                 type="button"
@@ -204,16 +207,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
             <Edit className="w-4 h-4" />
           </button>
 
-          {product.status !== 'sold' && (
-            <button
-              onClick={() => setSelectedProduct(product)}
-              className="p-1.5 rounded-lg text-sky-600 hover:bg-sky-50 transition"
-              title="売却情報を入力"
-            >
-              <CircleDollarSign className="w-4 h-4" />
-            </button>
-          )}
-
         </div>
       </div>
 
@@ -225,38 +218,76 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
           </p>
           <p className="text-slate-800 whitespace-nowrap">
             <span className="text-xs text-soft mr-1">付与P</span>
-            <span className="font-semibold">-{formatCurrency(product.point)}</span>
+            <span className="font-semibold">{formatCurrency(product.point)}</span>
           </p>
           <p className="text-slate-800 whitespace-nowrap">
             <span className="text-xs text-soft mr-1">実質</span>
             <span className="font-semibold">{formatCurrency(getEffectiveCost(product))}</span>
           </p>
+          {product.status === 'sold' && product.salePrice && (
+            <>
+              <span className="text-slate-300 px-1" aria-hidden>
+                |
+              </span>
+              <p className="text-slate-800 whitespace-nowrap">
+                <span className="text-xs text-soft mr-1">売却</span>
+                <span className="font-semibold">{formatCurrency(product.salePrice)}</span>
+              </p>
+              <p className="whitespace-nowrap">
+                <span className="text-xs text-soft mr-1">利益</span>
+                <span className={calculatePointProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
+                  {formatCurrency(calculatePointProfit(product))}
+                </span>
+              </p>
+              <p className="whitespace-nowrap">
+                <span className="text-xs text-soft mr-1">P利益</span>
+                <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
+                  {formatCurrency(calculateProfit(product))}
+                </span>
+              </p>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
             {statusLabel(product.status)}
           </span>
-
         </div>
       </div>
-
-      {product.status === 'sold' && product.salePrice && (
-        <div className="pt-2 border-t border-white/60 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="text-soft">売却 {formatCurrency(product.salePrice)}</span>
-          <span className={calculatePointProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
-            利益 {formatCurrency(calculatePointProfit(product))}
-          </span>
-          <span className={calculateProfit(product) >= 0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'}>
-            P利益 {formatCurrency(calculateProfit(product))}
-          </span>
-        </div>
-      )}
+      </div>
     </div>
   );
 
   return (
     <div className="space-y-5">
       <div className="glass-panel p-3 space-y-3">
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => setListTab('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${listTab === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+          >
+            全件
+          </button>
+          <button
+            onClick={() => setListTab('inventory')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${listTab === 'inventory' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+          >
+            在庫一覧
+          </button>
+          <button
+            onClick={() => setListTab('sold')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${listTab === 'sold' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+          >
+            売却済み一覧
+          </button>
+          <button
+            onClick={() => setListTab('pending')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${listTab === 'pending' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+          >
+            未着一覧
+          </button>
+        </div>
+
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -293,13 +324,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
                 日付指定
               </button>
             </div>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} className="input-field">
-              <option value="all">ステータス: すべて</option>
-              <option value="pending">未着+在庫</option>
-              <option value="sold">売却済み</option>
-              <option value="inventory">在庫のみ</option>
-            </select>
-
             {showDateRange && (
               <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
             )}
@@ -316,14 +340,11 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         )}
       </div>
 
-      <div className="text-xs text-soft px-1">検索結果 {filtered.length} 件</div>
+      <div className="text-sm text-soft px-1">検索結果 {filtered.length} 件</div>
 
       <div className="space-y-6">
         {sortKey === 'purchaseDateDesc' ? (
           <section>
-            <h2 className="mb-3 text-sm font-bold tracking-wide">
-              <span className="inline-flex items-center rounded-full px-3 py-1 bg-slate-100 text-slate-700">一覧 {filtered.length}</span>
-            </h2>
             <div className="space-y-3">{filtered.map(renderProductCard)}</div>
           </section>
         ) : (
@@ -335,9 +356,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
         )}
       </div>
 
-      {selectedProduct && (
-        <SaleForm product={selectedProduct} userId={userId} onClose={() => setSelectedProduct(null)} />
-      )}
       {editingProduct && (
         <EditProductForm
           product={editingProduct}

@@ -1,5 +1,5 @@
 ﻿import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { BarChart3, ChevronDown, List, Plus, Settings } from 'lucide-react';
+import { BarChart3, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -9,6 +9,7 @@ import { addStatusBatchLogToFirestore } from '@/lib/firestore';
 
 const Dashboard = lazy(() => import('@/components/Dashboard').then((m) => ({ default: m.Dashboard })));
 const ProductList = lazy(() => import('@/components/ProductList').then((m) => ({ default: m.ProductList })));
+const SaleBatchManager = lazy(() => import('@/components/SaleBatchManager').then((m) => ({ default: m.SaleBatchManager })));
 let addProductFormPromise: Promise<typeof import('@/components/AddProductForm')> | null = null;
 const loadAddProductForm = () => {
   if (!addProductFormPromise) {
@@ -27,7 +28,7 @@ const AdminJanManager = lazy(() =>
   import('@/components/AdminJanManager').then((m) => ({ default: m.AdminJanManager }))
 );
 
-type Screen = 'summary' | 'list';
+type Screen = 'summary' | 'list' | 'sale';
 type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'adminJanManager';
 
 function App() {
@@ -241,9 +242,13 @@ function App() {
                 <Dashboard products={summaryProducts} showMoM={periodFilter !== 'all'} />
               )}
             </section>
-          ) : (
+          ) : screen === 'list' ? (
             <section>
               <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
+            </section>
+          ) : (
+            <section>
+              <SaleBatchManager products={filteredProducts} userId={user.id} />
             </section>
           )}
         </Suspense>
@@ -287,6 +292,15 @@ function App() {
           >
             <List className="w-4 h-4" />
             一覧
+          </button>
+          <button
+            onClick={() => { setAppView('system'); setScreen('sale'); }}
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
+              appView === 'system' && screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            一括売却
           </button>
         </div>
       </nav>

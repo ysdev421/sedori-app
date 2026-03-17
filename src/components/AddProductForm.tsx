@@ -29,6 +29,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
   const [formData, setFormData] = useState({
     janCode: '',
     productName: '',
+    initialStatus: 'pending' as 'pending' | 'inventory',
     quantity: '1',
     purchasePrice: '0',
     point: '0',
@@ -255,7 +256,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
         point,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
-        status: 'pending',
+        status: formData.initialStatus,
       });
 
       await upsertProductTemplate(userId, {
@@ -286,6 +287,7 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
       setFormData({
         janCode: '',
         productName: '',
+        initialStatus: 'pending',
         quantity: '1',
         purchasePrice: '0',
         point: '0',
@@ -409,6 +411,29 @@ export function AddProductForm({ userId, onClose }: AddProductFormProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">初期ステータス</label>
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, initialStatus: 'pending' })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    formData.initialStatus === 'pending' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  未着
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, initialStatus: 'inventory' })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    formData.initialStatus === 'inventory' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  在庫
+                </button>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">購入日</label>
               <input
