@@ -267,7 +267,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
       const point = parseFloat(formData.point) || 0;
 
       await createProduct({
-        janCode: normalizedJan || undefined,
+        ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
         quantityTotal: qty,
         quantityAvailable: qty,
@@ -281,7 +281,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
       });
 
       await upsertProductTemplate(userId, {
-        janCode: normalizedJan || undefined,
+        ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
         purchaseLocation: formData.purchaseLocation,
         channel: formData.channel,
@@ -291,11 +291,11 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lo
       });
 
       await upsertJanMaster({
-        janCode: normalizedJan || undefined,
+        ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
       });
       await upsertUserJanUsage(userId, {
-        janCode: normalizedJan || undefined,
+        ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
         channel: formData.channel,
       });

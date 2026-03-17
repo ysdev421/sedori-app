@@ -20,8 +20,11 @@ export async function addProductToFirestore(
   userId: string,
   productData: Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
+  const cleanData = Object.fromEntries(
+    Object.entries(productData).filter(([, value]) => value !== undefined)
+  );
   const docRef = await addDoc(collection(db, 'products'), {
-    ...productData,
+    ...cleanData,
     userId,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
