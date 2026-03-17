@@ -1,4 +1,4 @@
-﻿import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { BarChart3, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
@@ -22,7 +22,6 @@ const AdminJanManager = lazy(() =>
 );
 
 type Screen = 'summary' | 'list' | 'sale';
-type SystemType = 'ebay' | 'kaitori';
 type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'adminJanManager';
 
 function App() {
@@ -33,26 +32,17 @@ function App() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showManagementMenu, setShowManagementMenu] = useState(false);
   const [appView, setAppView] = useState<AppView>('system');
-  const [activeSystem, setActiveSystem] = useState<SystemType>('ebay');
-  const [screenBySystem, setScreenBySystem] = useState<Record<SystemType, Screen>>({
-    ebay: 'list',
-    kaitori: 'list',
-  });
+  const [screen, setScreen] = useState<Screen>('list');
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
-  const isKaitori = activeSystem === 'kaitori';
   const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || '')
     .split(',')
     .map((v) => v.trim().toLowerCase())
     .filter(Boolean);
   const isAdmin = adminEmails.length > 0 && adminEmails.includes((user?.email || '').toLowerCase());
-  const currentScreen = screenBySystem[activeSystem];
-  const screen: Screen = !isKaitori && currentScreen === 'sale' ? 'list' : currentScreen;
 
-  const filteredProducts = products.filter((p) =>
-    activeSystem === 'ebay' ? p.channel === 'ebay' || !p.channel : p.channel === 'kaitori'
-  );
+  const filteredProducts = products.filter((p) => p.channel === 'kaitori');
 
   const summaryProducts = filteredProducts.filter((p) => {
     if (periodFilter === 'all') return true;
@@ -92,19 +82,6 @@ function App() {
     return <LoginForm />;
   }
 
-  const setScreen = (nextScreen: Screen) => {
-    setScreenBySystem((prev) => ({ ...prev, [activeSystem]: nextScreen }));
-  };
-
-  const switchSystem = (nextSystem: SystemType) => {
-    setAppView('system');
-    setActiveSystem(nextSystem);
-    setShowManagementMenu(false);
-    if (nextSystem === 'ebay') {
-      setScreenBySystem((prev) => ({ ...prev, ebay: prev.ebay === 'sale' ? 'list' : prev.ebay }));
-    }
-  };
-
   const bulkUpdateStatus = async (ids: string[], status: 'pending' | 'inventory') => {
     await Promise.all(ids.map((id) => updateProductData(id, { status })));
     await addStatusBatchLogToFirestore(user.id, {
@@ -112,10 +89,6 @@ function App() {
       productIds: ids,
       affectedCount: ids.length,
     });
-  };
-
-  const bulkUpdateChannel = async (ids: string[], channel: 'ebay' | 'kaitori') => {
-    await Promise.all(ids.map((id) => updateProductData(id, { channel })));
   };
 
   const changePeriodFilter = (value: 'thisMonth' | 'lastMonth' | 'thisYear' | 'all') => {
@@ -130,28 +103,6 @@ function App() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-28">
         <section className="mb-5 relative">
-          <div className="mb-3">
-            <div className="text-xs text-soft font-semibold tracking-wide mb-2">システム切替</div>
-            <div className="glass-panel p-1.5 inline-flex gap-1">
-              <button
-                onClick={() => switchSystem('ebay')}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                  activeSystem === 'ebay' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-                }`}
-              >
-                eBayシステム
-              </button>
-              <button
-                onClick={() => switchSystem('kaitori')}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
-                  activeSystem === 'kaitori' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-                }`}
-              >
-                買取システム
-              </button>
-            </div>
-          </div>
-
           <button
             onClick={() => setShowManagementMenu((v) => !v)}
             className="glass-panel px-4 py-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800 hover:bg-white/80 transition"
@@ -202,10 +153,6 @@ function App() {
           )}
         </section>
 
-        <section className="mb-5">
-          <div className="text-xs text-soft font-semibold tracking-wide">現在: {activeSystem === 'ebay' ? 'eBay' : '買取流し'}</div>
-        </section>
-
         <Suspense fallback={<div className="glass-panel p-6 text-sm text-slate-600">読み込み中...</div>}>
           {appView === 'purchaseLocationMaster' ? (
             <PurchaseLocationMaster userId={user.id} />
@@ -213,7 +160,6 @@ function App() {
             <StatusBatchManager
               products={filteredProducts}
               onBulkUpdate={bulkUpdateStatus}
-              onBulkChannelUpdate={bulkUpdateChannel}
             />
           ) : appView === 'adminJanManager' && isAdmin ? (
             <AdminJanManager />
@@ -291,7 +237,7 @@ function App() {
       <button
         onClick={() => setShowAddForm(true)}
         className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] sm:bottom-8 sm:right-8 z-30 bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 text-white rounded-2xl p-4 shadow-2xl transition hover:scale-105 active:scale-95 flex items-center justify-center"
-        title={`${activeSystem === 'ebay' ? 'eBay' : '買取'}の商品を追加`}
+        title="商品を追加"
         style={{ display: appView === 'system' ? undefined : 'none' }}
       >
         <Plus className="w-7 h-7" />
@@ -320,23 +266,21 @@ function App() {
             <List className="w-4 h-4" />
             一覧
           </button>
-          {isKaitori && (
-            <button
-              onClick={() => setScreen('sale')}
-              className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
-                screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
-              }`}
-            >
-              <Truck className="w-4 h-4" />
-              一括売却
-            </button>
-          )}
+          <button
+            onClick={() => setScreen('sale')}
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
+              screen === 'sale' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            一括売却
+          </button>
         </div>
       </nav>
 
       {showAddForm && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/30" />}>
-          <AddProductForm userId={user.id} defaultChannel={activeSystem} lockChannel onClose={() => setShowAddForm(false)} />
+          <AddProductForm userId={user.id} defaultChannel="kaitori" lockChannel onClose={() => setShowAddForm(false)} />
         </Suspense>
       )}
     </div>

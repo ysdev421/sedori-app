@@ -153,7 +153,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   };
 
   const channelLabel = (channel?: Product['channel']) => {
-    if (channel === 'ebay') return { text: 'eBay', cls: 'bg-indigo-100 text-indigo-700' };
     if (channel === 'kaitori') return { text: '買取流し', cls: 'bg-purple-100 text-purple-700' };
     return null;
   };

@@ -110,7 +110,6 @@ export function SaleForm({ product, userId, onClose }: SaleFormProps) {
             >
               <option>メルカリ</option>
               <option>Amazon</option>
-              <option>eBay</option>
               <option>買取店</option>
               <option>その他</option>
             </select>

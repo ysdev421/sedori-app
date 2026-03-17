@@ -19,13 +19,13 @@ import { JanScannerModal } from '@/components/JanScannerModal';
 interface AddProductFormProps {
   userId: string;
   onClose?: () => void;
-  defaultChannel?: 'ebay' | 'kaitori';
+  defaultChannel?: 'kaitori';
   lockChannel?: boolean;
 }
 
 const normalizeJanCode = (value: string) => value.replace(/\D/g, '').trim();
 
-export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockChannel = false }: AddProductFormProps) {
+export function AddProductForm({ userId, onClose, defaultChannel = 'kaitori', lockChannel = false }: AddProductFormProps) {
   const lookupSeqRef = useRef(0);
   const isKaitori = defaultChannel === 'kaitori';
   const [formData, setFormData] = useState({
@@ -35,7 +35,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
     purchasePrice: '0',
     purchasePointUsed: '0',
     point: '0',
-    channel: defaultChannel as 'ebay' | 'kaitori',
+    channel: defaultChannel as 'kaitori',
     purchaseDate: new Date().toISOString().split('T')[0],
     purchaseLocation: 'メルカリ',
   });
@@ -126,7 +126,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
         janCode,
         productName: template.productName,
         purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
-        channel: lockChannel ? defaultChannel : template.channel === 'kaitori' ? 'kaitori' : 'ebay',
+        channel: lockChannel ? defaultChannel : 'kaitori',
         purchasePrice:
           typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
         purchasePointUsed:
@@ -191,7 +191,7 @@ export function AddProductForm({ userId, onClose, defaultChannel = 'ebay', lockC
       janCode: template.janCode || prev.janCode,
       productName: template.productName || prev.productName,
       purchaseLocation: template.purchaseLocation || prev.purchaseLocation,
-      channel: lockChannel ? defaultChannel : template.channel === 'kaitori' ? 'kaitori' : 'ebay',
+      channel: lockChannel ? defaultChannel : 'kaitori',
       purchasePrice:
         typeof template.lastPurchasePrice === 'number' ? String(template.lastPurchasePrice) : prev.purchasePrice,
       purchasePointUsed:

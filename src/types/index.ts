@@ -2,7 +2,7 @@ export interface Product {
   id: string;
   userId: string;
   janCode?: string;
-  channel?: 'ebay' | 'kaitori' | 'other';
+  channel?: 'kaitori' | 'other';
   quantityTotal?: number;
   quantityAvailable?: number;
   productName: string;
@@ -27,7 +27,7 @@ export interface ProductTemplate {
   janCode?: string;
   productName: string;
   purchaseLocation?: string;
-  channel?: 'ebay' | 'kaitori' | 'other';
+  channel?: 'kaitori' | 'other';
   lastPurchasePrice?: number;
   lastPurchasePointUsed?: number;
   lastCouponDiscount?: number;

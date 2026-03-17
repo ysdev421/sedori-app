@@ -23,7 +23,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     productName: product.productName,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
-    channel: (product.channel === 'kaitori' ? 'kaitori' : 'ebay') as 'ebay' | 'kaitori',
+    channel: 'kaitori' as 'kaitori',
     purchasePrice: String(product.purchasePrice),
     purchasePointUsed: String(product.purchasePointUsed || 0),
     point: String(product.point),
@@ -83,7 +83,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     productName: product.productName,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
-    channel: (product.channel === 'kaitori' ? 'kaitori' : 'ebay') as 'ebay' | 'kaitori',
+    channel: 'kaitori' as 'kaitori',
     purchasePrice: String(product.purchasePrice),
     purchasePointUsed: String(product.purchasePointUsed || 0),
     point: String(product.point),
@@ -371,10 +371,9 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
               <label className="block text-sm font-medium text-slate-700 mb-1.5">販路</label>
               <select
                 value={formData.channel}
-                onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'ebay' | 'kaitori' })}
+                onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'kaitori' })}
                 className="input-field"
               >
-                <option value="ebay">eBay</option>
                 <option value="kaitori">買取流し</option>
               </select>
             </div>
