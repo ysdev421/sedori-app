@@ -3,7 +3,8 @@ import Papa from 'papaparse';
 import { Download, Loader2, Upload } from 'lucide-react';
 import { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, startAfter } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { upsertJanMaster } from '@/lib/firestore';
+import { addProductToFirestore, getUserProductTemplates, upsertJanMaster } from '@/lib/firestore';
+import { useStore } from '@/lib/store';
 
 type JanRow = { janCode: string; productName: string; url?: string };
 type DiffReport = {
@@ -195,14 +196,17 @@ export function AdminJanManager() {
   const [loadingImport, setLoadingImport] = useState(false);
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
+  const [loadingRestore, setLoadingRestore] = useState(false);
   const [extractProgress, setExtractProgress] = useState(0);
   const [importProgress, setImportProgress] = useState(0);
   const [existingProgress, setExistingProgress] = useState(0);
+  const [restoreProgress, setRestoreProgress] = useState(0);
   const [log, setLog] = useState('未実行');
   const [robotsNote, setRobotsNote] = useState('');
   const [diff, setDiff] = useState<DiffReport>({ newCount: 0, updateCount: 0, newJanCodes: [], updateJanCodes: [] });
   const [onlyNew, setOnlyNew] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const user = useStore((state) => state.user);
 
   const validRows = useMemo(() => rows.filter((r) => r.productName && r.productName !== '（要確認）'), [rows]);
   const importTargetCount = onlyNew ? diff.newCount : validRows.length;
@@ -363,6 +367,54 @@ export function AdminJanManager() {
     }
   };
 
+  const restoreProductsFromTemplates = async () => {
+    if (!user?.id) {
+      setLog('ユーザー情報が取得できません。再ログイン後に再実行してください。');
+      return;
+    }
+
+    setLoadingRestore(true);
+    setRestoreProgress(0);
+    setLog('product_templates から products を復元中...');
+    try {
+      const templates = await getUserProductTemplates(user.id);
+      if (templates.length === 0) {
+        setLog('復元対象のテンプレートがありません。');
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      let created = 0;
+      for (let i = 0; i < templates.length; i += 1) {
+        const t = templates[i];
+        if (!t.productName?.trim()) continue;
+
+        await addProductToFirestore(user.id, {
+          janCode: t.janCode,
+          productName: t.productName.trim(),
+          quantityTotal: 1,
+          quantityAvailable: 1,
+          channel: t.channel || 'kaitori',
+          purchasePrice: Number(t.lastPurchasePrice ?? 0),
+          purchasePointUsed: Number(t.lastPurchasePointUsed ?? 0),
+          point: Number(t.lastPoint ?? 0),
+          purchaseDate: today,
+          purchaseLocation: t.purchaseLocation?.trim() || '不明',
+          status: 'pending',
+        });
+        created += 1;
+        setRestoreProgress(Math.round(((i + 1) / templates.length) * 100));
+      }
+
+      setLog(`復元完了: ${created}件を products に再作成しました。`);
+      setRestoreProgress(100);
+    } catch (e) {
+      setLog(e instanceof Error ? e.message : '復元に失敗しました');
+    } finally {
+      setLoadingRestore(false);
+    }
+  };
+
   const onCsvImport = async (file: File) => {
     const text = await file.text();
     const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
@@ -376,6 +428,8 @@ export function AdminJanManager() {
     await recalcDiff(next);
     setLog(`CSV読み込み完了: ${next.length}件`);
   };
+
+  const busy = loadingExtract || loadingImport || loadingDiff || loadingExisting || loadingRestore;
 
   return (
     <section className="space-y-4">
@@ -414,51 +468,33 @@ export function AdminJanManager() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={runExtract}
-            disabled={loadingExtract || loadingImport || loadingDiff || loadingExisting}
-            className="btn-primary px-4 py-2 rounded-xl inline-flex items-center gap-2"
-          >
+          <button type="button" onClick={runExtract} disabled={busy} className="btn-primary px-4 py-2 rounded-xl inline-flex items-center gap-2">
             {loadingExtract ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             1. 買取WIKIから抽出
           </button>
 
-          <button
-            type="button"
-            onClick={runImport}
-            disabled={loadingExtract || loadingImport || loadingDiff || loadingExisting || importTargetCount === 0}
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800 inline-flex items-center gap-2"
-          >
+          <button type="button" onClick={runImport} disabled={busy || importTargetCount === 0} className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800 inline-flex items-center gap-2">
             {loadingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             2. jan_masterへ取り込み
           </button>
 
-          <button
-            type="button"
-            onClick={() => downloadCsv(validRows)}
-            disabled={validRows.length === 0 || loadingExtract || loadingImport || loadingDiff || loadingExisting}
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800"
-          >
+          <button type="button" onClick={() => downloadCsv(validRows)} disabled={validRows.length === 0 || busy} className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800">
             CSVダウンロード
           </button>
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loadingExtract || loadingImport || loadingDiff || loadingExisting}
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800"
-          >
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy} className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800">
             CSV読み込み
           </button>
-          <button
-            type="button"
-            onClick={loadExistingJanMaster}
-            disabled={loadingExtract || loadingImport || loadingDiff || loadingExisting}
-            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800"
-          >
+
+          <button type="button" onClick={loadExistingJanMaster} disabled={busy} className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800">
             jan_master既存一覧を取得
           </button>
+
+          <button type="button" onClick={restoreProductsFromTemplates} disabled={busy} className="px-4 py-2 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 inline-flex items-center gap-2">
+            {loadingRestore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            テンプレートから商品復元
+          </button>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -477,6 +513,7 @@ export function AdminJanManager() {
           <p>{log}</p>
           {(loadingExtract || loadingImport || loadingDiff) && <p>進捗: {loadingExtract ? `${extractProgress}%` : `${importProgress}%`}</p>}
           {loadingExisting && <p>既存一覧取得 進捗: {existingProgress}%</p>}
+          {loadingRestore && <p>商品復元 進捗: {restoreProgress}%</p>}
           <p>差分: 新規 {diff.newCount}件 / 更新候補 {diff.updateCount}件</p>
           <p>取り込み対象: {importTargetCount}件</p>
           {robotsNote && <p className="text-xs text-slate-500">{robotsNote}</p>}
@@ -515,19 +552,10 @@ export function AdminJanManager() {
 
       <div className="glass-panel p-5 space-y-2">
         <p className="text-sm text-slate-600">jan_master 既存登録JAN一覧: {existingJanRows.length}件</p>
-        <input
-          value={existingFilter}
-          onChange={(e) => setExistingFilter(e.target.value)}
-          className="input-field"
-          placeholder="JANまたは商品名で絞り込み"
-        />
+        <input value={existingFilter} onChange={(e) => setExistingFilter(e.target.value)} className="input-field" placeholder="JANまたは商品名で絞り込み" />
         <div className="max-h-56 overflow-auto border border-slate-200 rounded-xl p-2 space-y-1 bg-white/60">
-          {existingJanRows.length === 0 && (
-            <p className="text-sm text-slate-500 p-2">「jan_master既存一覧を取得」を押すと表示されます</p>
-          )}
-          {existingJanRows.length > 0 && existingViewRows.length === 0 && (
-            <p className="text-sm text-slate-500 p-2">絞り込み条件に一致するJANがありません</p>
-          )}
+          {existingJanRows.length === 0 && <p className="text-sm text-slate-500 p-2">「jan_master既存一覧を取得」を押すと表示されます</p>}
+          {existingJanRows.length > 0 && existingViewRows.length === 0 && <p className="text-sm text-slate-500 p-2">絞り込み条件に一致するJANがありません</p>}
           {existingViewRows.map((row) => (
             <div key={`existing-${row.janCode}`} className="text-xs text-slate-700 p-1">
               <span className="font-semibold">{row.janCode}</span>
