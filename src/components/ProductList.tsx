@@ -26,9 +26,6 @@ export function ProductList({ products, userId, onDelete }: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [query, setQuery] = useState('');
-  const currentMonthStart = new Date();
-  currentMonthStart.setDate(1);
-  const nextMonthStart = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() + 1, 1);
   const fmt = (d: Date) => d.toISOString().split('T')[0];
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
