@@ -63,7 +63,6 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   }, [userId]);
 
   const isDirty = JSON.stringify({
-    productName: formData.productName,
     status: formData.status,
     quantityAvailable: formData.quantityAvailable,
     purchasePrice: formData.purchasePrice,
@@ -74,7 +73,6 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     saleLocation: formData.saleLocation,
     saleDate: formData.saleDate,
   }) !== JSON.stringify({
-    productName: product.productName,
     status: product.status,
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
@@ -102,7 +100,6 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
 
     try {
       const updates: Partial<Product> = {
-        productName: formData.productName,
         status: formData.status,
         quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
@@ -152,14 +149,15 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">商品名</label>
-            <input
-              type="text"
-              required
-              value={formData.productName}
-              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-              className="input-field"
-            />
+            <p className="text-sm font-semibold text-slate-800 whitespace-pre-wrap break-words">{formData.productName}</p>
           </div>
+
+          {product.janCode && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">JANコード</label>
+              <p className="text-sm font-mono text-slate-600">{product.janCode}</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">ステータス</label>

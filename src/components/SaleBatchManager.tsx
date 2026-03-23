@@ -27,6 +27,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const [memo, setMemo] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [productSalePrices, setProductSalePrices] = useState<Record<string, string>>({});
+  const [productSaleQtys, setProductSaleQtys] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [cancelingBatchId, setCancelingBatchId] = useState('');
   const [recentBatches, setRecentBatches] = useState<SaleBatchSummary[]>([]);
@@ -69,8 +70,20 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
     [candidates, selectedIds]
   );
 
-  const selectedEffectiveCost = selectedProducts.reduce((sum, p) => sum + getEffectiveCost(p), 0);
-  const selectedActualCost = selectedProducts.reduce((sum, p) => sum + getActualPayment(p), 0);
+  const getSoldQty = (p: Product) => {
+    const max = Math.max(1, p.quantityAvailable ?? p.quantityTotal ?? 1);
+    const raw = parseInt(productSaleQtys[p.id] ?? '', 10);
+    return isNaN(raw) ? max : Math.max(1, Math.min(max, raw));
+  };
+
+  const selectedEffectiveCost = selectedProducts.reduce((sum, p) => {
+    const total = Math.max(1, p.quantityTotal ?? 1);
+    return sum + Math.round((getEffectiveCost(p) / total) * getSoldQty(p));
+  }, 0);
+  const selectedActualCost = selectedProducts.reduce((sum, p) => {
+    const total = Math.max(1, p.quantityTotal ?? 1);
+    return sum + Math.round((getActualPayment(p) / total) * getSoldQty(p));
+  }, 0);
   const basePurchaseAmountValue = selectedProducts.reduce((sum, p) => {
     const v = Math.max(0, Math.round(parseFloat(productSalePrices[p.id] || '0') || 0));
     return sum + v;
@@ -86,6 +99,12 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
     setProductSalePrices((prev) => (prev[id] !== undefined ? prev : { ...prev, [id]: '' }));
+    setProductSaleQtys((prev) => {
+      if (prev[id] !== undefined) return prev;
+      const p = candidates.find((c) => c.id === id);
+      const qty = p?.quantityAvailable ?? p?.quantityTotal ?? 1;
+      return { ...prev, [id]: String(qty) };
+    });
   };
 
   const toggleAll = () => {
@@ -99,6 +118,15 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
       const next = { ...prev };
       ids.forEach((id) => {
         if (next[id] === undefined) next[id] = '';
+      });
+      return next;
+    });
+    setProductSaleQtys((prev) => {
+      const next = { ...prev };
+      candidates.forEach((p) => {
+        if (next[p.id] === undefined) {
+          next[p.id] = String(p.quantityAvailable ?? p.quantityTotal ?? 1);
+        }
       });
       return next;
     });
@@ -142,6 +170,11 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
 
     setSubmitting(true);
     try {
+      const productSaleQtysNum = selectedProducts.reduce<Record<string, number>>((acc, p) => {
+        acc[p.id] = getSoldQty(p);
+        return acc;
+      }, {});
+
       const result = await confirmSaleBatchInFirestore({
         userId,
         productIds: selectedIds,
@@ -151,6 +184,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
         receivedPoint: bonusPointValue,
         pointRate: pointRateValue,
         productBasePrices,
+        productSaleQtys: productSaleQtysNum,
         memo: memo.trim(),
       });
 
@@ -159,6 +193,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
       });
       setSelectedIds([]);
       setProductSalePrices({});
+      setProductSaleQtys({});
       setReceivedPoint('');
       setMemo('');
       setMessage(`一括売却を保存しました（${result.updatedProducts.length}件）`);
@@ -253,42 +288,6 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
       </div>
 
       <div className="glass-panel p-4 space-y-3">
-        <h3 className="text-sm font-bold text-slate-900">最近の一括売却（取り消し）</h3>
-        {loadingBatches ? (
-          <p className="text-sm text-slate-500">読み込み中...</p>
-        ) : recentBatches.length === 0 ? (
-          <p className="text-sm text-slate-500">一括売却履歴はありません</p>
-        ) : (
-          <div className="space-y-2">
-            {recentBatches.map((batch) => (
-              <div key={batch.id} className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-slate-900 truncate">
-                    {batch.saleDate} / {batch.saleLocation} / {batch.itemCount}件
-                  </p>
-                  <p className="text-xs text-slate-600">最終受取: {formatCurrency(batch.totalRevenue)}</p>
-                </div>
-                {batch.canceledAt ? (
-                  <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600">
-                    取り消し済み
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmTarget(batch)}
-                    disabled={!!cancelingBatchId}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-700 hover:bg-rose-50 transition"
-                  >
-                    {cancelingBatchId === batch.id ? '取り消し中...' : '取り消す'}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="glass-panel p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={query}
@@ -318,16 +317,37 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
                       実質原価 {formatCurrency(getEffectiveCost(p))} ・ 購入合計 {formatCurrency(getActualPayment(p))}
                     </p>
                     {checked && (
-                      <div className="mt-2 max-w-[180px]">
-                        <label className="block text-[11px] text-slate-600 mb-1">買取価格</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={productSalePrices[p.id] ?? ''}
-                          onChange={(e) => setProductSalePrices((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                          className="input-field h-9 text-sm"
-                          placeholder="0"
-                        />
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        {(p.quantityAvailable ?? p.quantityTotal ?? 1) > 1 && (
+                          <div>
+                            <label className="block text-[11px] text-slate-600 mb-1">売却数</label>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setProductSaleQtys((prev) => ({ ...prev, [p.id]: String(Math.max(1, getSoldQty(p) - 1)) }))}
+                                className="w-8 h-9 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold text-base flex items-center justify-center"
+                              >−</button>
+                              <span className="w-8 text-center text-sm font-semibold text-slate-900">{getSoldQty(p)}</span>
+                              <button
+                                type="button"
+                                onClick={() => setProductSaleQtys((prev) => ({ ...prev, [p.id]: String(Math.min(p.quantityAvailable ?? p.quantityTotal ?? 1, getSoldQty(p) + 1)) }))}
+                                className="w-8 h-9 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-bold text-base flex items-center justify-center"
+                              >+</button>
+                              <span className="text-[10px] text-slate-400">/ {p.quantityAvailable ?? p.quantityTotal ?? 1}</span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-[140px] max-w-[180px]">
+                          <label className="block text-[11px] text-slate-600 mb-1">買取価格</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={productSalePrices[p.id] ?? ''}
+                            onChange={(e) => setProductSalePrices((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                            className="input-field h-9 text-sm"
+                            placeholder="0"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

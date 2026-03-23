@@ -149,9 +149,9 @@ export function Dashboard({ products, showMoM = true }: DashboardProps) {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="card p-4">
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${stat.tone} flex items-center justify-center mb-3`}>
-                <Icon className="w-5 h-5" />
+            <div key={index} className="card p-3 sm:p-4">
+              <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${stat.tone} flex items-center justify-center mb-2 sm:mb-3`}>
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <p className="text-xs text-soft font-semibold tracking-wide">{stat.label}</p>
               <p className={`text-lg sm:text-2xl font-black mt-1 truncate ${stat.negative ? 'text-rose-600' : 'text-slate-900'}`}>{stat.value}</p>

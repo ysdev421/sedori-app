@@ -575,6 +575,7 @@ export interface ConfirmSaleBatchInput {
   receivedPoint: number;
   pointRate: number;
   productBasePrices?: Record<string, number>;
+  productSaleQtys?: Record<string, number>;
   memo?: string;
 }
 
@@ -582,10 +583,10 @@ export interface ConfirmSaleBatchResult {
   batchId: string;
   updatedProducts: Array<{
     id: string;
-    salePrice: number;
-    saleDate: string;
-    saleLocation: string;
-    status: 'sold';
+    salePrice?: number;
+    saleDate?: string;
+    saleLocation?: string;
+    status: 'sold' | 'inventory' | 'pending';
     quantityAvailable: number;
   }>;
 }
@@ -668,7 +669,14 @@ export async function confirmSaleBatchInFirestore(input: ConfirmSaleBatchInput):
   >();
   targets.forEach((p, idx) => {
     const salePrice = allocatedRevenue[idx] || 0;
-    const soldQty = Math.max(1, p.quantityAvailable || p.quantityTotal || 1);
+    const maxQty = Math.max(1, p.quantityAvailable || p.quantityTotal || 1);
+    const requestedQty = input.productSaleQtys?.[p.id];
+    const soldQty = requestedQty != null
+      ? Math.max(1, Math.min(maxQty, Math.round(requestedQty)))
+      : maxQty;
+    const remainingQty = maxQty - soldQty;
+    const isFullSale = remainingQty <= 0;
+
     const janKey = p.janCode || `__NO_JAN__${p.productName}`;
     const currentJan = janBreakdownMap.get(janKey) || {
       janCode: p.janCode || '',
@@ -686,25 +694,38 @@ export async function confirmSaleBatchInFirestore(input: ConfirmSaleBatchInput):
     currentJan.itemCount += 1;
     janBreakdownMap.set(janKey, currentJan);
 
-    wb.update(p.ref, {
-      status: 'sold',
-      salePrice,
-      saleDate: input.saleDate,
-      saleLocation: input.saleLocation,
-      quantityAvailable: 0,
-      saleBatchId: batchDoc.id,
-      saleBatchCashPortion: allocatedCash[idx] || 0,
-      saleBatchPointValuePortion: allocatedPointValue[idx] || 0,
-      updatedAt: Timestamp.now(),
-    });
-    updatedProducts.push({
-      id: p.id,
-      salePrice,
-      saleDate: input.saleDate,
-      saleLocation: input.saleLocation,
-      status: 'sold',
-      quantityAvailable: 0,
-    });
+    if (isFullSale) {
+      wb.update(p.ref, {
+        status: 'sold',
+        salePrice,
+        saleDate: input.saleDate,
+        saleLocation: input.saleLocation,
+        quantityAvailable: 0,
+        saleBatchId: batchDoc.id,
+        saleBatchCashPortion: allocatedCash[idx] || 0,
+        saleBatchPointValuePortion: allocatedPointValue[idx] || 0,
+        updatedAt: Timestamp.now(),
+      });
+      updatedProducts.push({
+        id: p.id,
+        salePrice,
+        saleDate: input.saleDate,
+        saleLocation: input.saleLocation,
+        status: 'sold',
+        quantityAvailable: 0,
+      });
+    } else {
+      // 部分売却: 在庫数を減らすだけ、statusは変えない
+      wb.update(p.ref, {
+        quantityAvailable: remainingQty,
+        updatedAt: Timestamp.now(),
+      });
+      updatedProducts.push({
+        id: p.id,
+        status: p.status,
+        quantityAvailable: remainingQty,
+      });
+    }
   });
 
   wb.update(doc(db, 'sale_batches', batchDoc.id), {
@@ -755,6 +776,55 @@ export interface SaleBatchSummary {
   canceledAt?: string;
 }
 
+export interface SaleBatchDetail extends SaleBatchSummary {
+  receivedCash: number;
+  receivedPoint: number;
+  pointRate: number;
+  receivedPointValue: number;
+  memo: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    janCode: string;
+    purchasePrice: number;
+    quantityAvailable: number;
+    allocatedSalePrice: number;
+    allocatedCash: number;
+    allocatedPointValue: number;
+  }>;
+}
+
+export async function getSaleBatchDetail(userId: string, batchId: string): Promise<SaleBatchDetail | null> {
+  const snap = await getDoc(doc(db, 'sale_batches', batchId));
+  if (!snap.exists()) return null;
+  const d = snap.data() as any;
+  if (String(d.userId || '') !== userId) return null;
+  return {
+    id: snap.id,
+    saleDate: String(d.saleDate || ''),
+    saleLocation: String(d.saleLocation || ''),
+    itemCount: Math.max(0, toNumberSafe(d.itemCount)),
+    totalRevenue: Math.max(0, toNumberSafe(d.totalRevenue)),
+    createdAt: toIso(d.createdAt),
+    canceledAt: d.canceledAt ? toIso(d.canceledAt) : undefined,
+    receivedCash: Math.max(0, toNumberSafe(d.receivedCash)),
+    receivedPoint: Math.max(0, toNumberSafe(d.receivedPoint)),
+    pointRate: toNumberSafe(d.pointRate, 1),
+    receivedPointValue: Math.max(0, toNumberSafe(d.receivedPointValue)),
+    memo: String(d.memo || ''),
+    items: Array.isArray(d.items) ? d.items.map((item: any) => ({
+      productId: String(item.productId || ''),
+      productName: String(item.productName || ''),
+      janCode: String(item.janCode || ''),
+      purchasePrice: toNumberSafe(item.purchasePrice),
+      quantityAvailable: Math.max(0, toNumberSafe(item.quantityAvailable)),
+      allocatedSalePrice: toNumberSafe(item.allocatedSalePrice),
+      allocatedCash: toNumberSafe(item.allocatedCash),
+      allocatedPointValue: toNumberSafe(item.allocatedPointValue),
+    })) : [],
+  };
+}
+
 export async function getUserRecentSaleBatches(userId: string, maxCount = 20): Promise<SaleBatchSummary[]> {
   const q = query(collection(db, 'sale_batches'), where('userId', '==', userId), limit(Math.max(1, maxCount * 3)));
   const snap = await getDocs(q);
@@ -772,6 +842,7 @@ export async function getUserRecentSaleBatches(userId: string, maxCount = 20): P
   });
 
   return rows
+    .filter((r) => r.saleDate.trim() !== '' && r.saleLocation.trim() !== '' && !r.canceledAt)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, Math.max(1, maxCount));
 }
@@ -808,14 +879,34 @@ export async function cancelSaleBatchInFirestore(
   }
 
   const items = Array.isArray(batchData.items) ? batchData.items : [];
+  const batchProductIds = Array.isArray(batchData.productIds)
+    ? batchData.productIds.map((v: unknown) => String(v || '')).filter(Boolean)
+    : [];
   const legacyProducts = items.length === 0
     ? await getDocs(query(collection(db, 'products'), where('saleBatchId', '==', batchId)))
     : null;
   const legacyTargets = (legacyProducts?.docs || [])
     .map((d: any) => ({ id: d.id, ...(d.data() as any) }))
     .filter((row: any) => String(row.userId || '') === userId);
-  if (items.length === 0 && legacyTargets.length === 0) {
-    throw new Error('取り消し対象の商品情報がありません');
+  const fallbackTargets = items.length === 0 && legacyTargets.length === 0 && batchProductIds.length > 0
+    ? (
+      await Promise.all(
+        batchProductIds.map(async (productId: string) => {
+          const snap = await getDoc(doc(db, 'products', productId));
+          if (!snap.exists()) return null;
+          const data = snap.data() as any;
+          if (String(data.userId || '') !== userId) return null;
+          return { id: snap.id, ...(data as any) };
+        })
+      )
+    ).filter(Boolean) as any[]
+    : [];
+  if (items.length === 0 && legacyTargets.length === 0 && fallbackTargets.length === 0) {
+    // 商品が見つからない孤立バッチはバッチ記録だけ取り消し済みにする
+    const wb = writeBatch(db);
+    wb.update(batchRef, { canceledAt: new Date(), cancelReason: reason || '商品情報なし（孤立データ）' });
+    await wb.commit();
+    return { batchId, revertedProducts: [] };
   }
 
   const wb = writeBatch(db);
@@ -836,6 +927,15 @@ export async function cancelSaleBatchInFirestore(
           previousStatus: 'inventory' as const,
           previousQty: Math.max(0, toNumberSafe(row.quantityTotal, 1)),
         }));
+  if (items.length === 0 && legacyTargets.length === 0 && fallbackTargets.length > 0) {
+    rollbackRows.push(
+      ...fallbackTargets.map((row: any) => ({
+        productId: String(row.id || ''),
+        previousStatus: 'inventory' as const,
+        previousQty: Math.max(0, toNumberSafe(row.quantityTotal, 1)),
+      }))
+    );
+  }
 
   for (const row of rollbackRows) {
     const productId = row.productId;

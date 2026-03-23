@@ -1,5 +1,5 @@
 ﻿import { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { BarChart3, Boxes, ChevronDown, List, Plus, Settings, Truck } from 'lucide-react';
+import { BarChart3, Boxes, ChevronDown, History, List, Plus, Settings, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
@@ -30,8 +30,11 @@ const ProductMasterManager = lazy(() =>
 const AdminJanManager = lazy(() =>
   import('@/components/AdminJanManager').then((m) => ({ default: m.AdminJanManager }))
 );
+const SaleHistoryScreen = lazy(() =>
+  import('@/components/SaleHistoryScreen').then((m) => ({ default: m.SaleHistoryScreen }))
+);
 
-type Screen = 'summary' | 'list' | 'janInventory' | 'sale';
+type Screen = 'summary' | 'list' | 'janInventory' | 'sale' | 'saleHistory';
 type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager';
 
 function App() {
@@ -45,13 +48,17 @@ function App() {
 
   useEffect(() => {
     if (!showManagementMenu) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (managementMenuRef.current && !managementMenuRef.current.contains(e.target as Node)) {
         setShowManagementMenu(false);
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, [showManagementMenu]);
   useEffect(() => {
     if (!user) return;
@@ -176,7 +183,9 @@ function App() {
           </button>
 
           {showManagementMenu && (
-            <div className="absolute mt-2 w-64 glass-panel p-2 z-20">
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowManagementMenu(false)} />
+              <div className="absolute mt-2 w-64 glass-panel p-2 z-20">
               <button
                 onClick={() => {
                   setAppView('purchaseLocationMaster');
@@ -224,6 +233,7 @@ function App() {
                 </button>
               )}
             </div>
+            </>
           )}
         </section>
 
@@ -298,7 +308,7 @@ function App() {
             </section>
           ) : screen === 'list' ? (
             <section>
-              <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} />
+              <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} initialListTab="inventory" />
             </section>
           ) : screen === 'janInventory' ? (
             <section>
@@ -310,9 +320,13 @@ function App() {
                 hideTabSelector
               />
             </section>
-          ) : (
+          ) : screen === 'sale' ? (
             <section>
               <SaleBatchManager products={filteredProducts} userId={user.id} />
+            </section>
+          ) : (
+            <section>
+              <SaleHistoryScreen userId={user.id} />
             </section>
           )}
         </Suspense>
@@ -355,7 +369,7 @@ function App() {
             }`}
           >
             <List className="w-4 h-4" />
-            一覧
+            在庫
           </button>
           <button
             onClick={() => { setAppView('system'); setScreen('sale'); }}
@@ -365,6 +379,15 @@ function App() {
           >
             <Truck className="w-4 h-4" />
             一括売却
+          </button>
+          <button
+            onClick={() => { setAppView('system'); setScreen('saleHistory'); }}
+            className={`px-2 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap inline-flex items-center gap-1 sm:gap-2 transition ${
+              appView === 'system' && screen === 'saleHistory' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            売却履歴
           </button>
           <button
             onClick={() => { setAppView('system'); setScreen('janInventory'); }}
