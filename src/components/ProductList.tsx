@@ -307,6 +307,11 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {(product.quantityTotal ?? 1) > 1 && (
+            <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700">
+              {product.quantityAvailable ?? product.quantityTotal}/{product.quantityTotal}
+            </span>
+          )}
           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge(product.status)}`}>
             {statusLabel(product.status)}
           </span>
