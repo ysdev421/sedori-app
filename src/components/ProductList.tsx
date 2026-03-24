@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Copy, Search, SlidersHorizontal } from 'lucide-react';
+import { RichDatePicker } from '@/components/RichDatePicker';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate, getEffectiveCost } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -390,10 +391,10 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
               </button>
             </div>
             {showDateRange && (
-              <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+              <RichDatePicker label="開始日" value={fromDate || new Date().toISOString().split('T')[0]} onChange={(v) => { setFromDate(v); setPeriodPreset('custom'); }} />
             )}
             {showDateRange && (
-              <input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setPeriodPreset('custom'); }} className="input-field" />
+              <RichDatePicker label="終了日" value={toDate || new Date().toISOString().split('T')[0]} onChange={(v) => { setToDate(v); setPeriodPreset('custom'); }} />
             )}
 
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)} className="input-field">

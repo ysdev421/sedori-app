@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { NumericInput } from '@/components/NumericInput';
+import { RichDatePicker } from '@/components/RichDatePicker';
 import {
   addExpenseToFirestore,
   deleteExpenseFromFirestore,
@@ -129,12 +130,10 @@ export function ExpenseManager({ userId }: ExpenseManagerProps) {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">日付</label>
-            <input
-              type="date"
+            <RichDatePicker
+              label="日付"
               value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              className="input-field"
+              onChange={(v) => setForm((f) => ({ ...f, date: v }))}
             />
           </div>
           <div>

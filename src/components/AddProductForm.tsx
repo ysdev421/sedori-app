@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { Camera, ExternalLink, Loader, Plus, X } from 'lucide-react';
 import { NumericInput } from '@/components/NumericInput';
+import { RichDatePicker } from '@/components/RichDatePicker';
 import { useProducts } from '@/hooks/useProducts';
 import {
   getPurchaseLocationUsageCounts,
@@ -354,7 +355,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
             {fieldErrors.productName && <p className="mt-1 text-xs text-rose-600">{fieldErrors.productName}</p>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
               <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 gap-1">
@@ -377,15 +378,6 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                   在庫
                 </button>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">購入日</label>
-              <input
-                type="date"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                className="input-field"
-              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">数量 *</label>
@@ -431,6 +423,13 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                   +
                 </button>
               </div>
+            </div>
+            <div>
+              <RichDatePicker
+                label="購入日"
+                value={formData.purchaseDate}
+                onChange={(v) => setFormData({ ...formData, purchaseDate: v })}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">購入場所</label>

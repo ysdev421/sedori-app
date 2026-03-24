@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { Copy, Loader, Plus, Save, Trash2, X } from 'lucide-react';
 import { NumericInput } from '@/components/NumericInput';
+import { RichDatePicker } from '@/components/RichDatePicker';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
@@ -223,12 +224,10 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">購入日</label>
-              <input
-                type="date"
+              <RichDatePicker
+                label="購入日"
                 value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                className="input-field"
+                onChange={(v) => setFormData({ ...formData, purchaseDate: v })}
               />
             </div>
 
@@ -401,12 +400,10 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">売却日</label>
-                  <input
-                    type="date"
+                  <RichDatePicker
+                    label="売却日"
                     value={formData.saleDate}
-                    onChange={(e) => setFormData({ ...formData, saleDate: e.target.value })}
-                    className="input-field"
+                    onChange={(v) => setFormData({ ...formData, saleDate: v })}
                   />
                 </div>
               </div>
