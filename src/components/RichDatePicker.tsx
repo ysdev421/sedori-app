@@ -46,7 +46,7 @@ export function RichDatePicker({ label = '日付', value, onChange }: RichDatePi
 
   return (
     <div className="relative">
-      <label className="block text-xs text-slate-600 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
