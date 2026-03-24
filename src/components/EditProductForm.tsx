@@ -301,7 +301,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                       quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) - 1)),
                     }))
                   }
-                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="残数を減らす"
                 >
                   -
@@ -316,7 +316,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                       quantityAvailable: String(Math.max(0, parseInt(e.target.value || '0', 10) || 0)),
                     })
                   }
-                  className="input-field text-center w-14 sm:w-16 px-2"
+                  className="input-field text-center w-14 sm:w-16 px-2 h-10 py-0"
                 />
                 <button
                   type="button"
@@ -326,7 +326,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                       quantityAvailable: String(Math.max(0, (parseInt(prev.quantityAvailable, 10) || 0) + 1)),
                     }))
                   }
-                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="残数を増やす"
                 >
                   +
@@ -426,8 +426,8 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                       return `${purchase - earned} 円`;
                     })()}
                   </span>
+                  <span className="ml-2 text-xs text-slate-500">購入金額 - 付与ポイント</span>
                 </p>
-                <p className="text-xs text-slate-500 mt-1">購入金額 - 付与ポイント</p>
               </div>
             </div>
           </div>
@@ -497,7 +497,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         </form>
       </div>
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
           <div className="bg-white rounded-2xl p-4 w-full max-w-sm space-y-3">
             <p className="text-sm font-semibold text-slate-900">未保存の変更があります。閉じますか？</p>
             <div className="flex justify-end gap-2">

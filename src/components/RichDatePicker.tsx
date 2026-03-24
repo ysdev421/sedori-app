@@ -62,6 +62,8 @@ export function RichDatePicker({ label = '日付', value, onChange }: RichDatePi
       </button>
 
       {open && (
+        <>
+        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
         <div className="absolute z-40 mt-2 w-[320px] max-w-[92vw] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
           <div className="px-3 py-2 bg-gradient-to-r from-sky-50 via-cyan-50 to-emerald-50 border-b border-slate-100 flex items-center justify-between">
             <button
@@ -143,6 +145,7 @@ export function RichDatePicker({ label = '日付', value, onChange }: RichDatePi
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );

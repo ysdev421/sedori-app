@@ -158,13 +158,13 @@ export function ExpenseManager({ userId }: ExpenseManagerProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">メモ</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">名目</label>
             <input
               type="text"
               value={form.memo}
               onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
               className="input-field"
-              placeholder="任意"
+              placeholder="例：Aサブスク"
             />
           </div>
         </div>

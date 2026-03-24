@@ -323,8 +323,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                 </div>
               )}
               {fieldErrors.janCode && <p className="mt-1 text-xs text-rose-600">{fieldErrors.janCode}</p>}
-              <p className="mt-1 text-[11px] text-slate-500">JANは通常 8桁 または 13桁です</p>
-              {kaitoriCandidates.length > 0 && (
+{kaitoriCandidates.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {kaitoriCandidates.map((t) => (
                     <button
@@ -346,7 +345,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">商品名 *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">商品名 <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white tracking-wide align-middle">必須</span></label>
             <input
               type="text"
               value={formData.productName}
@@ -383,7 +382,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">数量 *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">数量 <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white tracking-wide align-middle">必須</span></label>
               <div className="inline-flex items-center gap-1.5">
                 <button
                   type="button"
@@ -393,7 +392,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) - 1)),
                     }))
                   }
-                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を減らす"
                 >
                   -
@@ -409,7 +408,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                     })
                   }
                   required
-                  className="input-field text-center w-14 sm:w-16 px-2"
+                  className="input-field text-center w-14 sm:w-16 px-2 h-10 py-0"
                   placeholder="1"
                 />
                 <button
@@ -420,7 +419,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) + 1)),
                     }))
                   }
-                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を増やす"
                 >
                   +
@@ -453,8 +452,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
           <div className="glass-panel p-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">購入金額合計 *</label>
-                <p className="text-[11px] text-slate-500 mb-1">ポイント利用分も含めた合計額</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">購入金額合計 <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white tracking-wide align-middle">必須</span> <span className="font-normal text-[11px] text-slate-500">ポイント利用分も含む</span></label>
                 <NumericInput
                   integer
                   value={formData.purchasePrice}
@@ -520,9 +518,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                       return `${purchase - earned} 円`;
                     })()}
                   </span>
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  購入金額 - 付与ポイント
+                  <span className="ml-2 text-xs text-slate-500">購入金額 - 付与ポイント</span>
                 </p>
               </div>
             </div>
@@ -551,7 +547,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
       </div>
 
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
           <div className="bg-white rounded-2xl p-4 w-full max-w-sm space-y-3">
             <p className="text-sm font-semibold text-slate-900">入力内容が破棄されます。閉じますか？</p>
             <div className="flex justify-end gap-2">
