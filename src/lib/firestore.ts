@@ -789,6 +789,7 @@ export interface SaleBatchDetail extends SaleBatchSummary {
     productName: string;
     janCode: string;
     purchasePrice: number;
+    point: number;
     quantityAvailable: number;
     allocatedSalePrice: number;
     allocatedCash: number;
@@ -819,6 +820,7 @@ export async function getSaleBatchDetail(userId: string, batchId: string): Promi
       productName: String(item.productName || ''),
       janCode: String(item.janCode || ''),
       purchasePrice: toNumberSafe(item.purchasePrice),
+      point: toNumberSafe(item.point),
       quantityAvailable: Math.max(0, toNumberSafe(item.quantityAvailable)),
       allocatedSalePrice: toNumberSafe(item.allocatedSalePrice),
       allocatedCash: toNumberSafe(item.allocatedCash),
