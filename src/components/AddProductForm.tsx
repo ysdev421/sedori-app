@@ -393,7 +393,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) - 1)),
                     }))
                   }
-                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を減らす"
                 >
                   -
@@ -420,7 +420,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                       quantity: String(Math.max(1, (parseInt(prev.quantity, 10) || 1) + 1)),
                     }))
                   }
-                  className="w-9 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                  className="w-9 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   title="数量を増やす"
                 >
                   +
