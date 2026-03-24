@@ -230,7 +230,15 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
                     <div className="space-y-1.5">
                       {detailTarget.items.map((item, i) => (
                         <div key={i} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{item.productName}</p>
+                          <div className="flex items-center gap-1.5">
+                            {(() => {
+                              const p = item.allocatedSalePrice + item.allocatedPointValue - (item.purchasePrice - item.point);
+                              return p >= 0
+                                ? <span className="text-emerald-500 text-sm font-bold shrink-0">✓</span>
+                                : <span className="text-rose-500 text-sm font-bold shrink-0">✗</span>;
+                            })()}
+                            <p className="text-sm font-semibold text-slate-900 truncate">{item.productName}</p>
+                          </div>
                           {item.janCode && <p className="text-xs text-slate-400 font-mono">{item.janCode}</p>}
                           {editMode ? (
                             <div className="flex items-center gap-2 mt-1.5">
