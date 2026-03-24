@@ -15,6 +15,8 @@ export interface Product {
   saleDate?: string;
   memo?: string;
   extraPoints?: number[];
+  kaitoriPrice?: number;
+  kaitoriPriceAt?: string;
   createdAt: string;
   updatedAt: string;
 }

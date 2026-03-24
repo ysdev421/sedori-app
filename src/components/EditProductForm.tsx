@@ -21,9 +21,11 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   const loading = useStore((state) => state.loading);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>([product.purchaseLocation].filter(Boolean));
   const [janCopied, setJanCopied] = useState(false);
-  const [kaitoriPrice, setKaitoriPrice] = useState<number | null>(null);
-  const [kaitoriSearchUrl, setKaitoriSearchUrl] = useState('');
-  const [kaitoriCachedAt, setKaitoriCachedAt] = useState<number | null>(null);
+  const [kaitoriPrice, setKaitoriPrice] = useState<number | null>(product.kaitoriPrice ?? null);
+  const [kaitoriSearchUrl, setKaitoriSearchUrl] = useState(
+    product.janCode ? `https://kaitori.wiki/search?type=&keyword=${product.janCode}` : ''
+  );
+  const [kaitoriPriceAt, setKaitoriPriceAt] = useState<string | null>(product.kaitoriPriceAt ?? null);
   const [kaitoriLoading, setKaitoriLoading] = useState(false);
   const [kaitoriError, setKaitoriError] = useState('');
 
@@ -77,19 +79,6 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     loadLocations();
   }, [userId]);
 
-  // キャッシュ済みの買取価格を自動表示
-  useEffect(() => {
-    if (!product.janCode) return;
-    try {
-      const raw = localStorage.getItem(`kaitoriPrice_${product.janCode}`);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (Date.now() - (data.cachedAt ?? 0) > 24 * 60 * 60 * 1000) return;
-      setKaitoriPrice(data.highestPrice);
-      setKaitoriSearchUrl(data.searchUrl);
-      setKaitoriCachedAt(data.cachedAt ?? null);
-    } catch { /* noop */ }
-  }, [product.janCode]);
 
   const isDirty = JSON.stringify({
     status: formData.status,
@@ -219,9 +208,14 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                     try {
                       const result = await fetchKaitoriPrice(product.janCode || '');
                       if (result) {
+                        const now = new Date().toISOString();
                         setKaitoriPrice(result.highestPrice);
                         setKaitoriSearchUrl(result.searchUrl);
-                        setKaitoriCachedAt(result.cachedAt ?? null);
+                        setKaitoriPriceAt(now);
+                        await updateProductData(product.id, {
+                          kaitoriPrice: result.highestPrice,
+                          kaitoriPriceAt: now,
+                        });
                       } else {
                         setKaitoriError('価格情報が見つかりませんでした');
                       }
@@ -239,10 +233,10 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 {kaitoriPrice !== null && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
                     買取wiki {kaitoriPrice.toLocaleString()}円
-                    {kaitoriCachedAt && (
+                    {kaitoriPriceAt && (
                       <span className="font-normal text-slate-400">
                         {(() => {
-                          const mins = Math.floor((Date.now() - kaitoriCachedAt) / 60000);
+                          const mins = Math.floor((Date.now() - new Date(kaitoriPriceAt).getTime()) / 60000);
                           return mins < 60 ? `取得${mins}分前` : `取得${Math.floor(mins / 60)}時間前`;
                         })()}
                       </span>
