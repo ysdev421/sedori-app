@@ -158,8 +158,8 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   };
 
   return (
-    <div className="fixed inset-0 bg-black/45 flex items-end z-50">
-      <div className="w-full bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto animate-slide-in">
+    <div className="fixed inset-0 bg-black/45 flex items-end z-50" onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()}>
+      <div className="w-full bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto animate-slide-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-slate-900">商品を編集</h2>
           <div className="flex items-center gap-2">

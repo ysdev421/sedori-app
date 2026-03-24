@@ -40,6 +40,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
 
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [janHint, setJanHint] = useState('');
   const [janNotFound, setJanNotFound] = useState(false);
   const [extraPoints, setExtraPoints] = useState<string[]>([]);
@@ -253,13 +254,15 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
     }
   };
 
+  const isDirty = !!kaitoriLookup || formData.purchasePrice !== '0' || !!formData.memo;
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={() => onClose?.()}>
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()}>
       <div className="min-h-full w-full flex items-end pt-12">
         <div className="w-full bg-white rounded-t-2xl p-6 animate-slide-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">商品を追加</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition">
+          <button onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()} className="p-2 hover:bg-gray-100 rounded-lg transition">
             <X className="w-6 h-6 text-gray-600" />
           </button>
         </div>
@@ -547,6 +550,17 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
         </div>
       </div>
 
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-4 w-full max-w-sm space-y-3">
+            <p className="text-sm font-semibold text-slate-900">入力内容が破棄されます。閉じますか？</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700" onClick={() => setShowLeaveConfirm(false)}>戻る</button>
+              <button className="px-3 py-2 rounded-lg bg-rose-600 text-white" onClick={() => onClose?.()}>破棄して閉じる</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showScanner && (
         <JanScannerModal
           onClose={() => setShowScanner(false)}

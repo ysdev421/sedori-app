@@ -47,8 +47,8 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="glass-panel w-full max-w-md p-5">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="glass-panel w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-slate-900">パスワード変更</h3>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/70">
