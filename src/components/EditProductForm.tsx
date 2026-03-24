@@ -238,10 +238,13 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 </button>
                 {kaitoriPrice !== null && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                    最高 {kaitoriPrice.toLocaleString()}円
+                    買取wiki最高 {kaitoriPrice.toLocaleString()}円
                     {kaitoriCachedAt && (
                       <span className="font-normal text-slate-400">
-                        ({Math.floor((Date.now() - kaitoriCachedAt) / 3600000)}h前のキャッシュ)
+                        {(() => {
+                          const mins = Math.floor((Date.now() - kaitoriCachedAt) / 60000);
+                          return mins < 60 ? `取得${mins}分前` : `取得${Math.floor(mins / 60)}時間前`;
+                        })()}
                       </span>
                     )}
                     <a
