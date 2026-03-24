@@ -17,6 +17,8 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
   const [query, setQuery] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   const [saleMethod, setSaleMethod] = useState<'来店' | '郵送'>('来店');
+  const [shippingType, setShippingType] = useState<'着払いキャンペーン' | '実費'>('着払いキャンペーン');
+  const [shippingCost, setShippingCost] = useState('');
   const [saleLocation, setSaleLocation] = useState<(typeof SALE_LOCATIONS)[number]>(SALE_LOCATIONS[0]);
   const [receivedPoint, setReceivedPoint] = useState('');
   const [memo, setMemo] = useState('');
@@ -64,7 +66,8 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
     return sum + v;
   }, 0);
   const bonusPointValue = Math.max(0, Math.round(parseFloat(receivedPoint) || 0));
-  const revenue = basePurchaseAmountValue + bonusPointValue;
+  const shippingCostValue = saleMethod === '郵送' && shippingType === '実費' ? Math.max(0, Math.round(parseFloat(shippingCost) || 0)) : 0;
+  const revenue = basePurchaseAmountValue + bonusPointValue - shippingCostValue;
   const profit = revenue - selectedEffectiveCost;
   const pointProfit = revenue - selectedActualCost;
 
@@ -219,6 +222,38 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
             <label className="block text-xs text-slate-600 mb-1">買取総額</label>
             <input type="number" min={0} value={basePurchaseAmountValue} readOnly className="input-field bg-slate-50 text-slate-700" />
           </div>
+          {saleMethod === '郵送' && (
+            <div className="sm:col-span-2 lg:col-span-4">
+              <label className="block text-xs text-slate-600 mb-1">送料</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 gap-1">
+                  {(['着払いキャンペーン', '実費'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setShippingType(t)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition ${shippingType === t ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                {shippingType === '実費' && (
+                  <input
+                    type="number"
+                    min={0}
+                    value={shippingCost}
+                    onChange={(e) => setShippingCost(e.target.value)}
+                    className="input-field w-32"
+                    placeholder="0"
+                  />
+                )}
+                {shippingType === '着払いキャンペーン' && (
+                  <span className="text-xs text-slate-500">送料無料（0円）として計算</span>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-xs text-slate-600 mb-1">上乗せP（円）</label>
             <input type="number" min={0} value={receivedPoint} onChange={(e) => setReceivedPoint(e.target.value)} className="input-field" placeholder="0" />
@@ -234,7 +269,7 @@ export function SaleBatchManager({ products, userId }: SaleBatchManagerProps) {
           <p className="text-slate-700">最終受取: <span className="font-semibold">{formatCurrency(revenue)}</span></p>
           <p className="text-slate-700">利益: <span className={`font-semibold ${profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{formatCurrency(profit)}</span></p>
           <p className="text-slate-700">P利益: <span className={`font-semibold ${pointProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>{formatCurrency(pointProfit)}</span></p>
-          <p className="text-xs text-slate-500 mt-1">最終受取 = 買取総額 + 上乗せP（円）</p>
+          <p className="text-xs text-slate-500 mt-1">最終受取 = 買取総額 + 上乗せP - 送料</p>
         </div>
 
         {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
