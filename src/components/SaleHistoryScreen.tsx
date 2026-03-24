@@ -11,6 +11,12 @@ import {
 import { useStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 
+const formatSaleDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
+};
+
 interface SaleHistoryScreenProps {
   userId: string;
 }
@@ -135,7 +141,7 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
                   className="min-w-0 flex-1 text-left"
                 >
                   <p className="text-sm font-semibold text-slate-900">
-                    {batch.saleDate} / {batch.saleLocation} / {batch.itemCount}件
+                    {formatSaleDate(batch.saleDate)} / {batch.saleLocation} / {batch.itemCount}件
                   </p>
                   <p className="text-xs text-slate-600">最終受取: {formatCurrency(batch.totalRevenue)}</p>
                 </button>
@@ -189,11 +195,7 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">売却日</span>
-                    <span className="font-semibold">{(() => {
-                      const d = new Date(detailTarget.saleDate);
-                      const days = ['日', '月', '火', '水', '木', '金', '土'];
-                      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
-                    })()}</span>
+                    <span className="font-semibold">{formatSaleDate(detailTarget.saleDate)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">売却先</span>
