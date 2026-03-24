@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState } from 'react';
-import { Copy, Loader, Plus, Save, Trash2, X } from 'lucide-react';
+import { Copy, ExternalLink, Loader, Loader2, Plus, Save, Trash2, X } from 'lucide-react';
 import { NumericInput } from '@/components/NumericInput';
 import { RichDatePicker } from '@/components/RichDatePicker';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { copyToClipboard } from '@/lib/utils';
+import { fetchKaitoriPrice } from '@/lib/kaitoriPrice';
 import { getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
 import type { Product } from '@/types';
 
@@ -20,6 +21,10 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   const loading = useStore((state) => state.loading);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
   const [janCopied, setJanCopied] = useState(false);
+  const [kaitoriPrice, setKaitoriPrice] = useState<number | null>(null);
+  const [kaitoriSearchUrl, setKaitoriSearchUrl] = useState('');
+  const [kaitoriLoading, setKaitoriLoading] = useState(false);
+  const [kaitoriError, setKaitoriError] = useState('');
 
   const extraPointsInitial = product.extraPoints ?? [];
   const basePointInitial = product.point - extraPointsInitial.reduce((s, v) => s + v, 0);
@@ -172,7 +177,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
           {product.janCode && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">JANコード</label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-mono text-slate-600">{product.janCode}</p>
                 <button
                   type="button"
@@ -189,6 +194,46 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                   <Copy className="w-3 h-3" />
                   {janCopied ? 'コピーしました' : 'コピー'}
                 </button>
+                <button
+                  type="button"
+                  disabled={kaitoriLoading}
+                  onClick={async () => {
+                    setKaitoriLoading(true);
+                    setKaitoriError('');
+                    setKaitoriPrice(null);
+                    try {
+                      const result = await fetchKaitoriPrice(product.janCode || '');
+                      if (result) {
+                        setKaitoriPrice(result.highestPrice);
+                        setKaitoriSearchUrl(result.searchUrl);
+                      } else {
+                        setKaitoriError('価格情報が見つかりませんでした');
+                      }
+                    } catch {
+                      setKaitoriError('取得に失敗しました');
+                    } finally {
+                      setKaitoriLoading(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-sky-200 text-sky-600 hover:bg-sky-50"
+                >
+                  {kaitoriLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                  買取相場を確認
+                </button>
+                {kaitoriPrice !== null && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                    最高 {kaitoriPrice.toLocaleString()}円
+                    <a
+                      href={kaitoriSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-600 hover:text-sky-700"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </span>
+                )}
+                {kaitoriError && <span className="text-[11px] text-rose-600">{kaitoriError}</span>}
               </div>
             </div>
           )}
