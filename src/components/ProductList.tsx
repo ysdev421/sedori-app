@@ -280,6 +280,24 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
             <span className="text-xs text-soft mr-1">実質</span>
             <span className="font-semibold">{formatCurrency(getEffectiveCost(product))}</span>
           </p>
+          {product.kaitoriPrice && product.status !== 'sold' && (() => {
+            const diff = product.kaitoriPrice - getEffectiveCost(product);
+            return (
+              <>
+                <span className="text-slate-300 px-1" aria-hidden>|</span>
+                <p className="text-slate-800 whitespace-nowrap">
+                  <span className="text-xs text-soft mr-1">買取wiki</span>
+                  <span className="font-semibold">{formatCurrency(product.kaitoriPrice)}</span>
+                </p>
+                <p className="whitespace-nowrap">
+                  <span className="text-xs text-soft mr-1">差額</span>
+                  <span className={`font-semibold ${diff >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                    {diff >= 0 ? '+' : ''}{formatCurrency(diff)}
+                  </span>
+                </p>
+              </>
+            );
+          })()}
           {product.status === 'sold' && product.salePrice && (
             <>
               <span className="text-slate-300 px-1" aria-hidden>
