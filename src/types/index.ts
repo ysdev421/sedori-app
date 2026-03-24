@@ -76,6 +76,15 @@ export interface Expense {
   createdAt: string;
 }
 
+export interface KaitoriPriceHistory {
+  id: string;
+  userId: string;
+  janCode: string;
+  productId: string;
+  price: number;
+  recordedAt: string;
+}
+
 export interface ProfitSummary {
   totalProducts: number;
   totalRevenue: number;

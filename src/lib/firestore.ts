@@ -16,7 +16,7 @@
   where,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Expense, ExpenseCategory, Product, ProductMaster, ProductTemplate, SaleRecord } from '@/types';
+import type { Expense, ExpenseCategory, KaitoriPriceHistory, Product, ProductMaster, ProductTemplate, SaleRecord } from '@/types';
 
 export async function addProductToFirestore(
   userId: string,
@@ -1081,5 +1081,39 @@ export async function updateExpenseInFirestore(
   await updateDoc(doc(db, 'expenses', id), { ...data, updatedAt: Timestamp.now() });
 }
 
+export async function addKaitoriPriceHistory(
+  userId: string,
+  janCode: string,
+  productId: string,
+  price: number,
+): Promise<void> {
+  await addDoc(collection(db, 'kaitoriPriceHistory'), {
+    userId,
+    janCode,
+    productId,
+    price,
+    recordedAt: Timestamp.now(),
+  });
+}
 
+export async function getKaitoriPriceHistory(janCode: string): Promise<KaitoriPriceHistory[]> {
+  const q = query(
+    collection(db, 'kaitoriPriceHistory'),
+    where('janCode', '==', janCode),
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d: any) => {
+      const data = d.data() as any;
+      return {
+        id: d.id,
+        userId: data.userId,
+        janCode: data.janCode,
+        productId: data.productId,
+        price: data.price,
+        recordedAt: toIso(data.recordedAt),
+      } satisfies KaitoriPriceHistory;
+    })
+    .sort((a: KaitoriPriceHistory, b: KaitoriPriceHistory) => a.recordedAt.localeCompare(b.recordedAt));
+}
 

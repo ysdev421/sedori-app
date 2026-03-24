@@ -6,7 +6,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { copyToClipboard } from '@/lib/utils';
 import { fetchKaitoriPrice } from '@/lib/kaitoriPrice';
-import { getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
+import { addKaitoriPriceHistory, getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
 import type { Product } from '@/types';
 
 interface EditProductFormProps {
@@ -216,6 +216,9 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                           kaitoriPrice: result.highestPrice,
                           kaitoriPriceAt: now,
                         });
+                        if (product.janCode) {
+                          await addKaitoriPriceHistory(userId, product.janCode, product.id, result.highestPrice);
+                        }
                       } else {
                         setKaitoriError('価格情報が見つかりませんでした');
                       }
