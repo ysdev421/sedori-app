@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { Copy, Edit, Search, SlidersHorizontal } from 'lucide-react';
+import { Copy, Search, SlidersHorizontal } from 'lucide-react';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, formatCurrency, formatDate, getEffectiveCost } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -225,10 +225,15 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex items-center gap-1.5">
-              <h3 className="font-semibold text-slate-900 truncate min-w-0" title={product.janCode ? `${product.productName} (JAN:${product.janCode})` : product.productName}>
+              <button
+                type="button"
+                onClick={() => setEditingProduct(product)}
+                className="font-semibold text-slate-900 truncate min-w-0 text-left hover:text-sky-700 transition-colors"
+                title={product.janCode ? `${product.productName} (JAN:${product.janCode})` : product.productName}
+              >
                 {product.productName}
                 {product.janCode ? ` (JAN:${product.janCode})` : ''}
-              </h3>
+              </button>
               {product.janCode && (
                 <button
                   type="button"
@@ -260,16 +265,6 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
           </div>
         </div>
 
-        <div className="flex gap-1 shrink-0">
-          <button
-            onClick={() => setEditingProduct(product)}
-            className="p-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition"
-            title="編集"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-
-        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-sm">
