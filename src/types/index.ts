@@ -14,6 +14,7 @@ export interface Product {
   saleLocation?: string;
   saleDate?: string;
   memo?: string;
+  extraPoints?: number[];
   createdAt: string;
   updatedAt: string;
 }

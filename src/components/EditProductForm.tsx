@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { Copy, Loader, Save, Trash2, X } from 'lucide-react';
+import { Copy, Loader, Plus, Save, Trash2, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
@@ -18,13 +18,16 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
   const [janCopied, setJanCopied] = useState(false);
 
+  const extraPointsInitial = product.extraPoints ?? [];
+  const basePointInitial = product.point - extraPointsInitial.reduce((s, v) => s + v, 0);
+
   const [formData, setFormData] = useState({
     productName: product.productName,
     status: product.status,
     quantityTotal: String(product.quantityTotal || 1),
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
-    point: String(product.point),
+    point: String(basePointInitial),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
     salePrice: product.salePrice ? String(product.salePrice) : '',
@@ -32,6 +35,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     saleDate: product.saleDate || '',
     memo: product.memo || '',
   });
+  const [extraPoints, setExtraPoints] = useState<string[]>(extraPointsInitial.map(String));
   const [error, setError] = useState('');
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -69,6 +73,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     quantityAvailable: formData.quantityAvailable,
     purchasePrice: formData.purchasePrice,
     point: formData.point,
+    extraPoints,
     purchaseDate: formData.purchaseDate,
     purchaseLocation: formData.purchaseLocation,
     salePrice: formData.salePrice,
@@ -79,7 +84,8 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     status: product.status,
     quantityAvailable: String(product.quantityAvailable || product.quantityTotal || 1),
     purchasePrice: String(product.purchasePrice),
-    point: String(product.point),
+    point: String(basePointInitial),
+    extraPoints: extraPointsInitial.map(String),
     purchaseDate: product.purchaseDate,
     purchaseLocation: product.purchaseLocation,
     salePrice: product.salePrice ? String(product.salePrice) : '',
@@ -103,11 +109,14 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     setError('');
 
     try {
+      const extraPointsNums = extraPoints.map((p) => parseFloat(p) || 0).filter((v) => v !== 0);
+      const totalPoint = (parseFloat(formData.point) || 0) + extraPointsNums.reduce((s, v) => s + v, 0);
       const updates: Partial<Product> = {
         status: formData.status,
         quantityAvailable: Math.max(0, parseInt(formData.quantityAvailable, 10) || 0),
         purchasePrice: parseFloat(formData.purchasePrice) || 0,
-        point: parseFloat(formData.point) || 0,
+        point: totalPoint,
+        extraPoints: extraPointsNums.length > 0 ? extraPointsNums : undefined,
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
         memo: formData.memo.trim() || undefined,
@@ -306,13 +315,49 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント（通常）</label>
                 <input
                   type="number"
                   value={formData.point}
                   onChange={(e) => setFormData({ ...formData, point: e.target.value })}
                   className="input-field"
                 />
+                {extraPoints.map((v, i) => (
+                  <div key={i} className="flex items-center gap-1 mt-1">
+                    <span className="text-slate-400 text-xs font-bold">+</span>
+                    <input
+                      type="number"
+                      value={v}
+                      onChange={(e) => {
+                        const next = [...extraPoints];
+                        next[i] = e.target.value;
+                        setExtraPoints(next);
+                      }}
+                      className="input-field py-1.5 text-sm"
+                      placeholder="追加P（スクラッチ等）"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setExtraPoints((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-slate-400 hover:text-rose-500 transition text-xs px-1"
+                    >✕</button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setExtraPoints((prev) => [...prev, ''])}
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-semibold"
+                >
+                  <Plus className="w-3 h-3" />
+                  追加P入力（スクラッチ等）
+                </button>
+                {extraPoints.length > 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    合計: <span className="font-semibold text-slate-700">
+                      {(parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0)} P
+                    </span>
+                  </p>
+                )}
               </div>
               <div className="rounded-xl bg-white/70 border border-white/70 p-3 text-sm">
                 <p className="text-slate-700">
@@ -320,7 +365,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                   <span className="ml-2 font-bold text-slate-900">
                     {(() => {
                       const purchase = parseFloat(formData.purchasePrice) || 0;
-                      const earned = parseFloat(formData.point) || 0;
+                      const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
                       return `${purchase - earned} 円`;
                     })()}
                   </span>

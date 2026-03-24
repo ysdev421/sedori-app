@@ -198,7 +198,8 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
 
       const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
       const purchasePrice = parseFloat(formData.purchasePrice);
-      const point = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
+      const extraPointsNums = extraPoints.map((p) => parseFloat(p) || 0).filter((v) => v !== 0);
+      const point = (parseFloat(formData.point) || 0) + extraPointsNums.reduce((s, v) => s + v, 0);
 
       await createProduct({
         ...(normalizedJan ? { janCode: normalizedJan } : {}),
@@ -207,6 +208,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
         quantityAvailable: qty,
         purchasePrice,
         point,
+        ...(extraPointsNums.length > 0 ? { extraPoints: extraPointsNums } : {}),
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
         status: formData.initialStatus,
