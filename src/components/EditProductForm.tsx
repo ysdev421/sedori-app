@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { Loader, Save, Trash2, X } from 'lucide-react';
+import { Copy, Loader, Save, Trash2, X } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { getPurchaseLocationUsageCounts, getUserPurchaseLocations } from '@/lib/firestore';
@@ -16,6 +16,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
   const { updateProductData } = useProducts(userId);
   const loading = useStore((state) => state.loading);
   const [purchaseLocations, setPurchaseLocations] = useState<string[]>(['メルカリ']);
+  const [janCopied, setJanCopied] = useState(false);
 
   const [formData, setFormData] = useState({
     productName: product.productName,
@@ -159,7 +160,24 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
           {product.janCode && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">JANコード</label>
-              <p className="text-sm font-mono text-slate-600">{product.janCode}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-mono text-slate-600">{product.janCode}</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(product.janCode || '');
+                      setJanCopied(true);
+                      window.setTimeout(() => setJanCopied(false), 1200);
+                    } catch { /* noop */ }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  title="JANをコピー"
+                >
+                  <Copy className="w-3 h-3" />
+                  {janCopied ? 'コピーしました' : 'コピー'}
+                </button>
+              </div>
             </div>
           )}
 
