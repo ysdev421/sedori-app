@@ -364,8 +364,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
           <div className="glass-panel p-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">購入金額合計</label>
-                <p className="text-[11px] text-slate-500 mb-1">ポイント利用分も含めた合計額</p>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">購入金額合計 <span className="font-normal text-[11px] text-slate-500">ポイント利用分も含む</span></label>
                 <NumericInput
                   integer
                   required
@@ -375,7 +374,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント（通常）</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント</label>
                 <NumericInput
                   integer
                   value={formData.point}
@@ -394,7 +393,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                         setExtraPoints(next);
                       }}
                       className="input-field py-1.5 text-sm"
-                      placeholder="追加P（スクラッチ等）"
+                      placeholder="追加P"
                     />
                     <button
                       type="button"
@@ -409,7 +408,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                   className="mt-1.5 inline-flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-semibold"
                 >
                   <Plus className="w-3 h-3" />
-                  追加P入力（スクラッチ等）
+                  追加P入力
                 </button>
                 {extraPoints.length > 0 && (
                   <p className="mt-1 text-xs text-slate-500">

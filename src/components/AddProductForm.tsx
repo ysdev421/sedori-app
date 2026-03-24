@@ -484,7 +484,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                         setExtraPoints(next);
                       }}
                       className="input-field py-1.5 text-sm"
-                      placeholder="追加P（スクラッチ等）"
+                      placeholder="追加P"
                     />
                     <button
                       type="button"
@@ -498,7 +498,7 @@ export function AddProductForm({ userId, onClose, onGoToMaster }: AddProductForm
                   onClick={() => setExtraPoints((prev) => [...prev, ''])}
                   className="mt-1.5 text-xs text-sky-600 hover:text-sky-700 font-semibold"
                 >
-                  ＋ 追加P入力（スクラッチ等）
+                  ＋ 追加P入力
                 </button>
                 {extraPoints.length > 0 && (
                   <p className="mt-1 text-xs text-slate-500">
