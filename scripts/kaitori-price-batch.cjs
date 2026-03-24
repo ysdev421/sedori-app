@@ -1,32 +1,19 @@
 'use strict';
 
 /**
- * 買取価格一括取得バッチ
+ * 買取価格一括取得バッチ（Firebase Admin SDK版）
  *
  * 使い方:
  *   node scripts/kaitori-price-batch.cjs [--dry-run] [--interval=7000]
  *
  * 環境変数（.env または GitHub Secrets）:
- *   VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID,
- *   VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID,
- *   IMPORT_EMAIL, IMPORT_PASSWORD
+ *   FIREBASE_SERVICE_ACCOUNT_JSON  ... サービスアカウントキーのJSON文字列
+ *   FIREBASE_PROJECT_ID            ... Firebase プロジェクトID（サービスアカウントJSONに含まれる場合は省略可）
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { initializeApp } = require('firebase/app');
-const { getAuth, signInWithEmailAndPassword } = require('firebase/auth');
-const {
-  collection,
-  getDocs,
-  getFirestore,
-  query,
-  Timestamp,
-  updateDoc,
-  addDoc,
-  doc,
-  where,
-} = require('firebase/firestore');
+const admin = require('firebase-admin');
 
 // ── フェッチャー登録 ──────────────────────────────────────
 // 将来のサイト追加はここに require を1行追加するだけ
@@ -36,7 +23,6 @@ const FETCHERS = [
   // require('./fetchers/kaitori-rudeya.cjs'),
   // require('./fetchers/kaitori-icchome.cjs'),
 ];
-
 // ─────────────────────────────────────────────────────────
 
 function parseEnvFile(filePath) {
@@ -67,30 +53,30 @@ async function main() {
 
   console.log(`[batch] 開始 dry-run=${dryRun} interval=${intervalMs}ms fetchers=${FETCHERS.map((f) => f.name).join(', ')}`);
 
-  // Firebase 初期化
-  const firebaseConfig = {
-    apiKey: env.VITE_FIREBASE_API_KEY,
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: env.VITE_FIREBASE_APP_ID,
-  };
-  const missing = Object.entries(firebaseConfig).filter(([, v]) => !v).map(([k]) => k);
-  if (missing.length) {
-    console.error('[batch] 環境変数が不足:', missing.join(', '));
+  // Firebase Admin 初期化
+  const serviceAccountJson = env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountJson) {
+    console.error('[batch] FIREBASE_SERVICE_ACCOUNT_JSON が設定されていません');
     process.exit(1);
   }
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch {
+    console.error('[batch] FIREBASE_SERVICE_ACCOUNT_JSON のパースに失敗しました');
+    process.exit(1);
+  }
 
-  await signInWithEmailAndPassword(auth, env.IMPORT_EMAIL, env.IMPORT_PASSWORD);
-  console.log('[batch] Firebase 認証OK');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
 
-  // JAN コードがある全商品を取得
-  const snap = await getDocs(query(collection(db, 'products')));
+  const db = admin.firestore();
+  console.log('[batch] Firebase Admin 初期化OK');
+
+  // JAN コードがある未売却商品を全取得
+  const snap = await db.collection('products').get();
   const products = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .filter((p) => p.janCode && p.status !== 'sold');
@@ -104,6 +90,8 @@ async function main() {
   for (const product of products) {
     console.log(`[batch] 処理中: ${product.productName} (JAN:${product.janCode})`);
 
+    let bestPrice = product.kaitoriPrice ?? 0;
+
     for (const fetcher of FETCHERS) {
       try {
         const result = await fetcher.fetchPrice(product.janCode);
@@ -116,9 +104,9 @@ async function main() {
         console.log(`  [${fetcher.name}] ${result.price.toLocaleString()}円`);
 
         if (!dryRun) {
-          const now = Timestamp.now();
+          const now = admin.firestore.Timestamp.now();
           // 履歴を保存
-          await addDoc(collection(db, 'kaitoriPriceHistory'), {
+          await db.collection('kaitoriPriceHistory').add({
             userId: product.userId,
             janCode: product.janCode,
             productId: product.id,
@@ -126,14 +114,9 @@ async function main() {
             source: fetcher.name,
             recordedAt: now,
           });
-          // 商品の最新価格を更新（最高値で上書き）
-          const currentBest = product.kaitoriPrice ?? 0;
-          if (result.price >= currentBest) {
-            await updateDoc(doc(db, 'products', product.id), {
-              kaitoriPrice: result.price,
-              kaitoriPriceAt: now.toDate().toISOString(),
-              updatedAt: now,
-            });
+          // 最高値を記録
+          if (result.price >= bestPrice) {
+            bestPrice = result.price;
           }
         }
         updated++;
@@ -143,10 +126,20 @@ async function main() {
       }
 
       // サイト間にも間隔を空ける
-      if (FETCHERS.length > 1) await sleep(intervalMs);
+      if (FETCHERS.indexOf(fetcher) < FETCHERS.length - 1) {
+        await sleep(intervalMs);
+      }
     }
 
-    // 商品間のウェイト
+    // 商品の最新価格を更新
+    if (!dryRun && bestPrice > 0) {
+      await db.collection('products').doc(product.id).update({
+        kaitoriPrice: bestPrice,
+        kaitoriPriceAt: new Date().toISOString(),
+        updatedAt: admin.firestore.Timestamp.now(),
+      });
+    }
+
     console.log(`  次の商品まで ${intervalMs}ms 待機...`);
     await sleep(intervalMs);
   }
