@@ -205,13 +205,28 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
 
   const section = (title: string, color: string, items: Product[]) => {
     if (items.length === 0) return null;
+    const byDate = Object.entries(
+      items.reduce<Record<string, Product[]>>((acc, p) => {
+        const key = p.purchaseDate || '';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(p);
+        return acc;
+      }, {})
+    ).sort(([a], [b]) => toTime(b) - toTime(a));
 
     return (
       <section>
         <h2 className="mb-3 text-sm font-bold tracking-wide">
           <span className={`inline-flex items-center rounded-full px-3 py-1 ${color}`}>{title} {items.length}</span>
         </h2>
-        <div className="space-y-3">{items.map((p) => renderProductCard(p))}</div>
+        <div className="space-y-4">
+          {byDate.map(([date, dateItems]) => (
+            <div key={date} className="space-y-2">
+              <p className="px-1 text-[11px] text-slate-500 whitespace-nowrap">{formatDate(date)}</p>
+              <div className="space-y-3">{dateItems.map((p) => renderProductCard(p, false))}</div>
+            </div>
+          ))}
+        </div>
       </section>
     );
   };
