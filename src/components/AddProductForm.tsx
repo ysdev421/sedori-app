@@ -50,7 +50,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [kaitoriLookup, setKaitoriLookup] = useState('');
-  const [isFromCrawl, setIsFromCrawl] = useState(false);
   const [kaitoriCandidates, setKaitoriCandidates] = useState<ProductMaster[]>([]);
   const [templates, setTemplates] = useState<ProductTemplate[]>([]);
   const [masters, setMasters] = useState<ProductMaster[]>([]);
@@ -156,7 +155,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
     setFormData((prev) => ({ ...prev, janCode }));
     setJanHint('');
     setJanNotFound(false);
-    setIsFromCrawl(false);
 
     if (!janCode) return;
 
@@ -183,7 +181,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
       }));
       setJanHint('買取wikiから商品名を補完しました');
       setJanNotFound(false);
-      setIsFromCrawl(true);
       return;
     }
 
@@ -239,15 +236,9 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
 
     try {
       const normalizedJan = normalizeJanCode(formData.janCode);
-      const matchedMaster = masters.find(
-        (m) =>
-          normalizeJanCode(m.janCode) === normalizedJan &&
-          m.productName.trim() === formData.productName.trim()
-      );
       const nextFieldErrors: Record<string, string> = {};
       if (!formData.purchasePrice.trim()) nextFieldErrors.purchasePrice = '購入金額は必須です';
-      if (!formData.productName.trim()) nextFieldErrors.productName = '商品名は必須です';
-      if (!matchedMaster && !isFromCrawl) nextFieldErrors.productName = '商品マスタ管理でJAN/商品名を登録してください';
+      if (!formData.productName.trim()) nextFieldErrors.productName = '商品名は必須です（JAN検索で補完してください）';
       if (Object.keys(nextFieldErrors).length > 0) {
         setFieldErrors(nextFieldErrors);
         setError('未入力または未確定の項目があります');
@@ -303,7 +294,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
       });
       setJanHint('');
       setExtraPoints([]);
-      setIsFromCrawl(false);
       onClose?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');

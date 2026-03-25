@@ -50,7 +50,7 @@ export function RichDatePicker({ label = '日付', value, onChange }: RichDatePi
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="input-field w-full text-left inline-flex items-center justify-between"
+        className="input-field w-full text-left inline-flex items-center justify-between whitespace-nowrap"
       >
         <span>
           {(() => {
