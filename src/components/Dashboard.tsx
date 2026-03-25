@@ -190,7 +190,6 @@ function momText(value: number | null) {
 
 export function Dashboard({ products, allProducts, periodFilter, showMoM = true }: DashboardProps) {
   const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'pointProfit'>('revenue');
-  const [chartView, setChartView] = useState<'salePie' | 'purchasePie' | 'monthly'>('salePie');
 
   const summary = calculateProfitSummary(products);
   const mom = calcMoM(allProducts, periodFilter);
@@ -229,56 +228,47 @@ export function Dashboard({ products, allProducts, periodFilter, showMoM = true 
         })}
       </div>
 
-      {/* グラフ */}
+      {/* 円グラフ 2列 */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="glass-panel p-4 bg-gradient-to-br from-white/80 to-cyan-50/70">
+          <p className="text-xs font-semibold text-slate-600 mb-3">売却先別売上</p>
+          <DonutChart data={saleLocations} />
+        </div>
+        <div className="glass-panel p-4 bg-gradient-to-br from-white/80 to-cyan-50/70">
+          <p className="text-xs font-semibold text-slate-600 mb-3">購入先別仕入れ</p>
+          <DonutChart data={purchaseLocations} />
+        </div>
+      </div>
+
+      {/* 月次グラフ */}
       <div className="glass-panel p-5 bg-gradient-to-br from-white/80 to-cyan-50/70">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h3 className="font-bold text-slate-800">グラフ</h3>
-          <div className="glass-panel p-0.5 inline-flex gap-0.5">
-            <button onClick={() => setChartView('salePie')} className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${chartView === 'salePie' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>
-              売却先
-            </button>
-            <button onClick={() => setChartView('purchasePie')} className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${chartView === 'purchasePie' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>
-              購入先
-            </button>
-            <button onClick={() => setChartView('monthly')} className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${chartView === 'monthly' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}>
-              月次
-            </button>
-          </div>
-        </div>
-
-        {chartView === 'monthly' && (
-          <div className="glass-panel p-1 mb-3 inline-flex gap-1">
+          <h3 className="font-bold text-slate-800">月次</h3>
+          <div className="glass-panel p-1 inline-flex gap-1">
             <button onClick={() => setChartMetric('revenue')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'revenue' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>売上</button>
             <button onClick={() => setChartMetric('profit')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'profit' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>利益</button>
             <button onClick={() => setChartMetric('pointProfit')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${chartMetric === 'pointProfit' ? 'bg-slate-900 text-white' : 'text-slate-700'}`}>P利益</button>
           </div>
-        )}
-
-        {chartView === 'salePie' ? (
-          <DonutChart data={saleLocations} />
-        ) : chartView === 'purchasePie' ? (
-          <DonutChart data={purchaseLocations} />
+        </div>
+        {monthly.length === 0 ? (
+          <p className="text-sm text-soft">売却データがありません</p>
         ) : (
-          monthly.length === 0 ? (
-            <p className="text-sm text-soft">売却データがありません</p>
-          ) : (
-            <div className="grid grid-cols-6 gap-2 items-end h-40">
-              {monthly.map((m) => {
-                const value = chartMetric === 'revenue' ? m.revenue : chartMetric === 'profit' ? m.profit : m.pointProfit;
-                const max = chartMetric === 'revenue' ? maxRevenue : maxProfitAbs;
-                const positive = value >= 0;
-                const barClass = chartMetric === 'revenue' ? 'bg-gradient-to-t from-sky-500 to-cyan-400' : positive ? chartMetric === 'profit' ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-indigo-500 to-indigo-400' : 'bg-gradient-to-t from-rose-500 to-rose-400';
-                return (
-                  <div key={m.month} className="flex flex-col items-center justify-end h-full">
-                    <div className="w-full h-full flex items-end">
-                      <div className={`w-full rounded-t-md ${barClass}`} style={{ height: `${Math.max(8, (Math.abs(value) / max) * 100)}%` }} title={`${m.month}: ${formatCurrency(value)}`} />
-                    </div>
-                    <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
+          <div className="grid grid-cols-6 gap-2 items-end h-40">
+            {monthly.map((m) => {
+              const value = chartMetric === 'revenue' ? m.revenue : chartMetric === 'profit' ? m.profit : m.pointProfit;
+              const max = chartMetric === 'revenue' ? maxRevenue : maxProfitAbs;
+              const positive = value >= 0;
+              const barClass = chartMetric === 'revenue' ? 'bg-gradient-to-t from-sky-500 to-cyan-400' : positive ? chartMetric === 'profit' ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-indigo-500 to-indigo-400' : 'bg-gradient-to-t from-rose-500 to-rose-400';
+              return (
+                <div key={m.month} className="flex flex-col items-center justify-end h-full">
+                  <div className="w-full h-full flex items-end">
+                    <div className={`w-full rounded-t-md ${barClass}`} style={{ height: `${Math.max(8, (Math.abs(value) / max) * 100)}%` }} title={`${m.month}: ${formatCurrency(value)}`} />
                   </div>
-                );
-              })}
-            </div>
-          )
+                  <div className="text-[10px] text-soft mt-1">{m.month.slice(5)}月</div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
