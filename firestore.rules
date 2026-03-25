@@ -5,33 +5,44 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // 存在しないドキュメント(resource==null)への getDoc も許可するreadルール
+    function readAllowed() {
+      return request.auth != null && (resource == null || request.auth.uid == resource.data.userId);
+    }
+
     match /products/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /sales/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /sale_batches/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /sale_batch_items/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /product_templates/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if request.auth != null;
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /purchase_location_settings/{docId} {
-      allow read, update, delete: if request.auth != null
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null
         && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId;
@@ -46,38 +57,44 @@ service cloud.firestore {
     }
 
     match /user_jan_usage/{docId} {
-      allow read, update, delete: if request.auth != null
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
     }
 
     match /gift_cards/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /sale_location_settings/{docId} {
-      allow read, update, delete: if request.auth != null
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null
         && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId;
     }
 
     match /product_masters/{docId} {
-      allow read, update, delete: if request.auth != null
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
     }
 
     match /expenses/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
     match /status_batch_logs/{docId} {
-      allow read, update, delete: if isOwner(resource.data.userId);
+      allow read: if readAllowed();
+      allow update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 

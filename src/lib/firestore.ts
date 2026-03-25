@@ -6,6 +6,7 @@
   doc,
   getDoc,
   getDocs,
+  increment,
   limit,
   query,
   setDoc,
@@ -545,7 +546,6 @@ export async function upsertUserProductMaster(
 
   const id = `${userId}_${janCode}`;
   const ref = doc(db, 'product_masters', id);
-  const snap = await getDoc(ref);
   const now = Timestamp.now();
 
   await setDoc(
@@ -554,7 +554,7 @@ export async function upsertUserProductMaster(
       userId,
       janCode,
       productName,
-      createdAt: snap.exists() ? snap.data().createdAt : now,
+      createdAt: now,
       updatedAt: now,
     },
     { merge: true }
@@ -1216,6 +1216,13 @@ export async function updateGiftCard(
   updates: Partial<Omit<GiftCard, 'id' | 'userId' | 'createdAt'>>
 ): Promise<void> {
   await updateDoc(doc(db, 'gift_cards', id), { ...updates, updatedAt: Timestamp.now() });
+}
+
+export async function decrementGiftCardBalance(id: string, amount: number): Promise<void> {
+  await updateDoc(doc(db, 'gift_cards', id), {
+    balance: increment(-amount),
+    updatedAt: Timestamp.now(),
+  });
 }
 
 export async function deleteGiftCard(id: string): Promise<void> {

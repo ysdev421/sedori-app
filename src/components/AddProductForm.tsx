@@ -13,6 +13,7 @@ import {
   upsertJanMaster,
   upsertProductTemplate,
   upsertUserJanUsage,
+  decrementGiftCardBalance,
 } from '@/lib/firestore';
 import { useStore } from '@/lib/store';
 import type { GiftCard, GiftCardUsage, ProductMaster, ProductTemplate, PurchaseBreakdown } from '@/types';
@@ -314,6 +315,15 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
         ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
       });
+
+      // ギフトカード残高を減算（increment を使うため giftCards ステートに依存しない）
+      if (purchaseBreakdown) {
+        await Promise.all(
+          purchaseBreakdown.giftCardUsages.map((u) =>
+            decrementGiftCardBalance(u.giftCardId, u.amount)
+          )
+        );
+      }
 
       setFormData({
         janCode: '',

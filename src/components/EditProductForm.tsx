@@ -446,6 +446,33 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
             </div>
           </div>
 
+          {product.purchaseBreakdown && (
+            <div className="glass-panel p-3 space-y-2">
+              <p className="text-sm font-semibold text-slate-700">支払い内訳（登録時）</p>
+              {product.purchaseBreakdown.cash > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">現金</span>
+                  <span className="font-medium text-slate-800">{product.purchaseBreakdown.cash.toLocaleString('ja-JP')} 円</span>
+                </div>
+              )}
+              {product.purchaseBreakdown.giftCardUsages.map((u, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-slate-600">{u.brand} ギフトカード</span>
+                  <div className="text-right">
+                    <span className="font-medium text-slate-800">{u.amount.toLocaleString('ja-JP')} 円</span>
+                    <span className="block text-[11px] text-slate-400">実コスト {u.realCost.toLocaleString('ja-JP')} 円</span>
+                  </div>
+                </div>
+              ))}
+              {product.purchaseBreakdown.pointUse > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">ポイント支払い</span>
+                  <span className="font-medium text-slate-800">{product.purchaseBreakdown.pointUse.toLocaleString('ja-JP')} P</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">メモ</label>
             <textarea
