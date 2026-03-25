@@ -202,8 +202,8 @@ export function Dashboard({ products, allProducts, periodFilter, showMoM = true 
 
   const stats = [
     { label: '総売上', value: formatCurrency(summary.totalRevenue), sub: showMoM ? momText(mom.revenue) : null, subTone: mom.revenue === null ? 'text-slate-500' : mom.revenue >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: DollarSign, tone: 'from-sky-100 to-cyan-100 text-sky-700' },
-    { label: '粗利', value: formatCurrency(summary.totalPointProfit), sub: showMoM ? momText(mom.pointProfit) : null, subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-emerald-100 to-green-100 text-emerald-700', negative: summary.totalPointProfit < 0 },
-    { label: '粗利（P含む）', value: formatCurrency(summary.totalProfit), sub: showMoM ? momText(mom.profit) : null, subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-teal-100 to-emerald-100 text-teal-700', negative: summary.totalProfit < 0 },
+    { label: '粗利', value: formatCurrency(summary.totalPointProfit), sub: showMoM ? momText(mom.pointProfit) : null, subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-emerald-100 to-green-100 text-emerald-700', negative: summary.totalPointProfit < 0, positive: summary.totalPointProfit > 0, positiveBlue: true },
+    { label: '粗利（P含む）', value: formatCurrency(summary.totalProfit), sub: showMoM ? momText(mom.profit) : null, subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-teal-100 to-emerald-100 text-teal-700', negative: summary.totalProfit < 0, positive: summary.totalProfit > 0, positiveBlue: true },
     { label: '在庫金額', value: formatCurrency(summary.inventoryValue), sub: showMoM ? momText(inventoryMom) : null, subTone: inventoryMom === null ? 'text-slate-500' : inventoryMom >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: Package, tone: 'from-amber-100 to-orange-100 text-amber-700' },
   ];
 
@@ -220,7 +220,7 @@ export function Dashboard({ products, allProducts, periodFilter, showMoM = true 
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-soft font-semibold tracking-wide">{stat.label}</p>
-                <p className={`text-base sm:text-lg font-black truncate ${(stat as any).negative ? 'text-rose-600' : 'text-slate-900'}`}>{stat.value}</p>
+                <p className={`text-base sm:text-lg font-black truncate ${(stat as any).negative ? 'text-rose-600' : (stat as any).positive ? ((stat as any).positiveBlue ? 'text-sky-600' : 'text-emerald-600') : 'text-slate-900'}`}>{stat.value}</p>
                 {stat.sub && <p className={`text-xs font-semibold ${stat.subTone}`}>{stat.sub}</p>}
               </div>
             </div>

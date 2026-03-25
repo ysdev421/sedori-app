@@ -4,6 +4,7 @@ import {
   addProductToFirestore,
   updateProductInFirestore,
   deleteProductFromFirestore,
+  decrementGiftCardBalance,
   getUserProducts,
 } from '@/lib/firestore';
 import type { Product } from '@/types';
@@ -78,6 +79,15 @@ export function useProducts(userId: string | null) {
   const deleteProductData = async (id: string) => {
     setLoading(true);
     try {
+      // ギフトカード残高を元に戻す
+      const product = products.find((p) => p.id === id);
+      if (product?.purchaseBreakdown?.giftCardUsages?.length) {
+        await Promise.all(
+          product.purchaseBreakdown.giftCardUsages.map((u) =>
+            decrementGiftCardBalance(u.giftCardId, -u.amount)
+          )
+        );
+      }
       await deleteProductFromFirestore(id);
       deleteProduct(id);
       setError(null);

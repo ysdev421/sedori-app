@@ -660,13 +660,19 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-medium text-slate-600">ギフトカード使用</label>
-                    <button
-                      type="button"
-                      onClick={() => setBreakdownGiftUsages((prev) => [...prev, { cardId: giftCards[0]?.id || '', amount: '' }])}
-                      className="text-xs text-sky-600 hover:text-sky-700 font-semibold"
-                    >
-                      ＋ 追加
-                    </button>
+                    {breakdownGiftUsages.length < giftCards.length && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const usedIds = new Set(breakdownGiftUsages.map((u) => u.cardId));
+                          const nextCard = giftCards.find((c) => !usedIds.has(c.id)) ?? giftCards[0];
+                          setBreakdownGiftUsages((prev) => [...prev, { cardId: nextCard?.id || '', amount: '' }]);
+                        }}
+                        className="text-xs text-sky-600 hover:text-sky-700 font-semibold"
+                      >
+                        ＋ 追加
+                      </button>
+                    )}
                   </div>
                   {giftCards.length === 0 && (
                     <p className="text-xs text-slate-400">残高のあるギフトカードがありません（管理メニューから追加）</p>

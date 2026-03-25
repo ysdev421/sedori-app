@@ -6,9 +6,9 @@
   doc,
   getDoc,
   getDocs,
-  increment,
   limit,
   query,
+  runTransaction,
   setDoc,
   startAfter,
   Timestamp,
@@ -1219,9 +1219,12 @@ export async function updateGiftCard(
 }
 
 export async function decrementGiftCardBalance(id: string, amount: number): Promise<void> {
-  await updateDoc(doc(db, 'gift_cards', id), {
-    balance: increment(-amount),
-    updatedAt: Timestamp.now(),
+  const ref = doc(db, 'gift_cards', id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await runTransaction(db, async (tx: any) => {
+    const snap = await tx.get(ref);
+    const current = (snap.data()?.balance as number) ?? 0;
+    tx.update(ref, { balance: Math.max(0, current - amount), updatedAt: Timestamp.now() });
   });
 }
 

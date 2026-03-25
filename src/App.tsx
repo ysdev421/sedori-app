@@ -204,7 +204,7 @@ function App() {
               ) : appView === 'annualSummary' ? (
                 <AnnualSummaryScreen userId={user.id} products={filteredProducts} />
               ) : appView === 'giftCardManager' ? (
-                <GiftCardManager userId={user.id} />
+                <GiftCardManager userId={user.id} products={products} />
               ) : appView === 'adminJanManager' && isAdmin ? (
                 <AdminJanManager />
               ) : null}

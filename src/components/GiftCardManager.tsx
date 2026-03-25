@@ -3,10 +3,11 @@ import { CreditCard, Plus, Trash2, X, ChevronDown, ChevronUp } from 'lucide-reac
 import { NumericInput } from '@/components/NumericInput';
 import { RichDatePicker } from '@/components/RichDatePicker';
 import { addGiftCard, deleteGiftCard, getUserGiftCards, updateGiftCard } from '@/lib/firestore';
-import type { GiftCard } from '@/types';
+import type { GiftCard, Product } from '@/types';
 
 interface GiftCardManagerProps {
   userId: string;
+  products: Product[];
 }
 
 const BRANDS: GiftCard['brand'][] = ['Apple', 'Amazon', 'Google Play', 'その他'];
@@ -31,7 +32,7 @@ function emptyForm() {
   };
 }
 
-export function GiftCardManager({ userId }: GiftCardManagerProps) {
+export function GiftCardManager({ userId, products }: GiftCardManagerProps) {
   const [cards, setCards] = useState<GiftCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -260,6 +261,7 @@ export function GiftCardManager({ userId }: GiftCardManagerProps) {
                   <GiftCardRow
                     key={card.id}
                     card={card}
+                    usages={products.filter((p) => p.purchaseBreakdown?.giftCardUsages?.some((u) => u.giftCardId === card.id))}
                     expanded={expandedId === card.id}
                     onToggle={() => setExpandedId((v) => v === card.id ? null : card.id)}
                     onDelete={handleDelete}
@@ -278,6 +280,7 @@ export function GiftCardManager({ userId }: GiftCardManagerProps) {
                   <GiftCardRow
                     key={card.id}
                     card={card}
+                    usages={products.filter((p) => p.purchaseBreakdown?.giftCardUsages?.some((u) => u.giftCardId === card.id))}
                     expanded={expandedId === card.id}
                     onToggle={() => setExpandedId((v) => v === card.id ? null : card.id)}
                     onDelete={handleDelete}
@@ -296,6 +299,7 @@ export function GiftCardManager({ userId }: GiftCardManagerProps) {
 
 interface GiftCardRowProps {
   card: GiftCard;
+  usages: Product[];
   expanded: boolean;
   onToggle: () => void;
   onDelete: (id: string) => Promise<void>;
@@ -303,7 +307,7 @@ interface GiftCardRowProps {
   deleting: boolean;
 }
 
-function GiftCardRow({ card, expanded, onToggle, onDelete, onBalanceEdit, deleting }: GiftCardRowProps) {
+function GiftCardRow({ card, usages, expanded, onToggle, onDelete, onBalanceEdit, deleting }: GiftCardRowProps) {
   const [editBalance, setEditBalance] = useState(String(card.balance));
   const [savingBalance, setSavingBalance] = useState(false);
   const discountRate = card.faceValue > 0 ? Math.round((1 - card.purchasedPrice / card.faceValue) * 100) : 0;
@@ -379,6 +383,28 @@ function GiftCardRow({ card, expanded, onToggle, onDelete, onBalanceEdit, deleti
               {savingBalance ? '...' : '更新'}
             </button>
           </div>
+
+          {usages.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-600 mb-1.5">使用履歴 ({usages.length}件)</p>
+              <div className="space-y-1">
+                {usages.map((p) => {
+                  const usage = p.purchaseBreakdown?.giftCardUsages?.find((u) => u.giftCardId === card.id);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between text-xs bg-slate-50 rounded-lg px-2 py-1.5">
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-800 truncate">{p.productName}</p>
+                        <p className="text-slate-400">{p.purchaseDate}</p>
+                      </div>
+                      <span className="font-semibold text-slate-700 shrink-0 ml-2">
+                        {usage?.amount.toLocaleString()}円
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {card.memo && (
             <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-2 py-1">{card.memo}</p>
