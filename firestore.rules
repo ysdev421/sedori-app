@@ -51,5 +51,10 @@ service cloud.firestore {
       allow update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
     }
+
+    match /gift_cards/{docId} {
+      allow read, create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isOwner(resource.data.userId);
+    }
   }
 }

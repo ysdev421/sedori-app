@@ -1201,8 +1201,9 @@ export async function addGiftCard(
   userId: string,
   data: Omit<GiftCard, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   const docRef = await addDoc(collection(db, 'gift_cards'), {
-    ...data,
+    ...clean,
     userId,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
