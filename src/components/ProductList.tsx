@@ -484,7 +484,7 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
               </div>
             )}
           </section>
-        ) : sortKey === 'purchaseDateDesc' && (listTab === 'inventory' || listTab === 'all') ? (
+        ) : sortKey === 'purchaseDateDesc' ? (
           <section className="space-y-4">
             {Object.entries(
               filtered.reduce<Record<string, Product[]>>((acc, p) => {
@@ -503,10 +503,6 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
                   </div>
                 </div>
               ))}
-          </section>
-        ) : sortKey === 'purchaseDateDesc' ? (
-          <section>
-            <div className="space-y-3">{filtered.map((p) => renderProductCard(p))}</div>
           </section>
         ) : (
           <>

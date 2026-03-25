@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DollarSign, Package, TrendingUp } from 'lucide-react';
-import { calculateProfit, calculateProfitSummary, formatCurrency, getActualPayment, getRemainingActualPayment } from '@/lib/utils';
+import { calculateProfit, calculatePointProfit, calculateProfitSummary, formatCurrency, getActualPayment, getRemainingActualPayment } from '@/lib/utils';
 import type { Product } from '@/types';
 
 interface DashboardProps {
@@ -21,8 +21,14 @@ function toMonthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// summaryProducts と同じ日付選択ロジック: 売却済みかつsaleDateあり → saleDate、それ以外 → purchaseDate
+function getProductMonthKey(p: Product): string | null {
+  const dateStr = p.status === 'sold' && p.saleDate ? p.saleDate : p.purchaseDate;
+  return getMonthKey(dateStr);
+}
+
 function calcMoM(allProducts: Product[], periodFilter: string) {
-  const sold = allProducts.filter((p) => p.status === 'sold' && p.saleDate);
+  const sold = allProducts.filter((p) => p.status === 'sold');
   const now = new Date();
 
   let currentKey: string;
@@ -36,7 +42,7 @@ function calcMoM(allProducts: Product[], periodFilter: string) {
     prevKey = toMonthKey(new Date(now.getFullYear(), now.getMonth() - 2, 1));
   } else {
     // 全期間・今年: データ内の直近2ヶ月を比較
-    const monthKeys = Array.from(new Set(sold.map((p) => getMonthKey(p.saleDate)).filter(Boolean))).sort() as string[];
+    const monthKeys = Array.from(new Set(sold.map((p) => getProductMonthKey(p)).filter(Boolean))).sort() as string[];
     currentKey = monthKeys[monthKeys.length - 1] ?? '';
     prevKey = monthKeys[monthKeys.length - 2] ?? '';
   }
@@ -46,11 +52,11 @@ function calcMoM(allProducts: Product[], periodFilter: string) {
   }
 
   const sumByMonth = (key: string) => {
-    const target = sold.filter((p) => getMonthKey(p.saleDate) === key);
+    const target = sold.filter((p) => getProductMonthKey(p) === key);
     return {
       revenue: target.reduce((s, p) => s + (p.salePrice || 0), 0),
       profit: target.reduce((s, p) => s + calculateProfit(p), 0),
-      pointProfit: target.reduce((s, p) => s + ((p.salePrice || 0) - getActualPayment(p)), 0),
+      pointProfit: target.reduce((s, p) => s + calculatePointProfit(p), 0),
     };
   };
 
