@@ -465,6 +465,40 @@ export async function getPurchaseLocationUsageCounts(userId: string): Promise<Re
   return counts;
 }
 
+const DEFAULT_SALE_LOCATIONS = ['メルカリ', 'ヤフオク', 'ゲオ', 'ブックオフ'];
+
+export async function getUserSaleLocations(userId: string): Promise<string[]> {
+  const ref = doc(db, 'sale_location_settings', userId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return [...DEFAULT_SALE_LOCATIONS];
+  const data = snap.data() as any;
+  const list = Array.isArray(data?.locations) ? data.locations : [];
+  const cleaned = list.map((v: unknown) => (typeof v === 'string' ? v.trim() : '')).filter((v: string) => v.length > 0);
+  if (cleaned.length === 0) return [...DEFAULT_SALE_LOCATIONS];
+  return Array.from(new Set(cleaned));
+}
+
+export async function upsertUserSaleLocations(userId: string, locations: string[]): Promise<void> {
+  const cleaned = Array.from(new Set(locations.map((v) => v.trim()).filter((v) => v.length > 0)));
+  await setDoc(
+    doc(db, 'sale_location_settings', userId),
+    { userId, locations: cleaned.length > 0 ? cleaned : [...DEFAULT_SALE_LOCATIONS], updatedAt: Timestamp.now() },
+    { merge: true }
+  );
+}
+
+export async function getSaleLocationUsageCounts(userId: string): Promise<Record<string, number>> {
+  const q = query(collection(db, 'sale_batches'), where('userId', '==', userId));
+  const snap = await getDocs(q);
+  const counts: Record<string, number> = {};
+  snap.docs.forEach((d: any) => {
+    const location = typeof d.data().saleLocation === 'string' ? d.data().saleLocation.trim() : '';
+    if (!location) return;
+    counts[location] = (counts[location] || 0) + 1;
+  });
+  return counts;
+}
+
 export async function addStatusBatchLogToFirestore(
   userId: string,
   payload: {

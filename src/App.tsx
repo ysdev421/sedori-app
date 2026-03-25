@@ -21,6 +21,9 @@ const AddProductForm = lazy(() => loadAddProductForm().then((m) => ({ default: m
 const PurchaseLocationMaster = lazy(() =>
   import('@/components/PurchaseLocationMaster').then((m) => ({ default: m.PurchaseLocationMaster }))
 );
+const SaleLocationMaster = lazy(() =>
+  import('@/components/SaleLocationMaster').then((m) => ({ default: m.SaleLocationMaster }))
+);
 const StatusBatchManager = lazy(() =>
   import('@/components/StatusBatchManager').then((m) => ({ default: m.StatusBatchManager }))
 );
@@ -41,7 +44,7 @@ const AnnualSummaryScreen = lazy(() =>
 );
 
 type Screen = 'summary' | 'list' | 'sale' | 'saleHistory' | 'admin';
-type AppView = 'system' | 'purchaseLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager' | 'expenseManager' | 'annualSummary';
+type AppView = 'system' | 'purchaseLocationMaster' | 'saleLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager' | 'expenseManager' | 'annualSummary';
 
 function App() {
   const { authLoading } = useAuth();
@@ -173,7 +176,9 @@ function App() {
                 <ChevronLeft className="w-4 h-4" />
                 管理メニューに戻る
               </button>
-              {appView === 'purchaseLocationMaster' ? (
+              {appView === 'saleLocationMaster' ? (
+                <SaleLocationMaster userId={user.id} />
+              ) : appView === 'purchaseLocationMaster' ? (
                 <PurchaseLocationMaster userId={user.id} />
               ) : appView === 'statusBatchManager' ? (
                 <StatusBatchManager products={filteredProducts} onBulkUpdate={bulkUpdateStatus} />
@@ -205,6 +210,7 @@ function App() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {([
                   { view: 'purchaseLocationMaster' as const, label: '購入場所\nマスタ管理', icon: MapPin, color: 'from-sky-100 to-cyan-100 text-sky-600' },
+                  { view: 'saleLocationMaster' as const, label: '売却先\nマスタ管理', icon: MapPin, color: 'from-emerald-100 to-teal-100 text-emerald-600' },
                   { view: 'statusBatchManager' as const, label: 'ステータス\n一括管理', icon: RefreshCw, color: 'from-violet-100 to-purple-100 text-violet-600' },
                   { view: 'productMasterManager' as const, label: '商品マスタ\n管理', icon: BookOpen, color: 'from-emerald-100 to-green-100 text-emerald-600' },
                   { view: 'expenseManager' as const, label: '経費管理', icon: Receipt, color: 'from-rose-100 to-pink-100 text-rose-600' },
@@ -278,7 +284,7 @@ function App() {
                   <div className="h-48 rounded-xl bg-slate-100 animate-pulse" />
                 </div>
               ) : (
-                <Dashboard products={summaryProducts} showMoM={periodFilter !== 'all'} />
+                <Dashboard products={summaryProducts} allProducts={filteredProducts} periodFilter={periodFilter} showMoM={periodFilter !== 'all'} />
               )}
             </section>
           ) : screen === 'list' ? (

@@ -27,7 +27,7 @@ interface SaleHistoryScreenProps {
 export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
   const [recentBatches, setRecentBatches] = useState<SaleBatchSummary[]>([]);
   const [loadingBatches, setLoadingBatches] = useState(false);
-  const [cancelingBatchId, setCancelingBatchId] = useState('');
+  const [canceling, setCanceling] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<SaleBatchSummary | null>(null);
   const [detailTarget, setDetailTarget] = useState<SaleBatchDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -75,7 +75,7 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
 
   const cancelBatch = async (batch: SaleBatchSummary) => {
     setMessage('');
-    setCancelingBatchId(batch.id);
+    setCanceling(true);
     try {
       const result = await cancelSaleBatchInFirestore(userId, batch.id, 'ユーザー操作で取り消し');
       result.revertedProducts.forEach((p) => {
@@ -90,7 +90,7 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
         detail: e instanceof Error ? e.message : '一括売却の取り消しに失敗しました',
       });
     } finally {
-      setCancelingBatchId('');
+      setCanceling(false);
     }
   };
 
@@ -217,10 +217,11 @@ export function SaleHistoryScreen({ userId }: SaleHistoryScreenProps) {
                     </button>
                     <button
                       type="button"
+                      disabled={canceling}
                       onClick={() => detailTarget && setConfirmTarget(recentBatches.find(b => b.id === detailTarget.id) ?? null)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-700 hover:bg-rose-50"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-rose-200 text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                     >
-                      取り消す
+                      {canceling ? '取り消し中...' : '取り消す'}
                     </button>
                   </>
                 )}
