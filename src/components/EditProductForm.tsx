@@ -386,7 +386,10 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">付与ポイント</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  付与ポイント
+                  <span className="block text-[11px] font-normal text-slate-500 mt-0.5 invisible">_</span>
+                </label>
                 <NumericInput
                   integer
                   value={formData.point}
