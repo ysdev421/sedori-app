@@ -434,14 +434,25 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
             <div className="rounded-xl bg-white/60 border border-white/80 px-3 py-2 flex items-center justify-between">
               <span className="text-sm text-slate-600">実質原価</span>
               <div className="text-right">
-                <span className="text-base font-bold text-slate-900">
-                  {(() => {
-                    const purchase = parseFloat(formData.purchasePrice) || 0;
-                    const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
-                    return (purchase - earned).toLocaleString('ja-JP');
-                  })()} 円
-                </span>
-                <span className="block text-[11px] text-slate-400">購入金額 - 付与P</span>
+                {(() => {
+                  const purchase = parseFloat(formData.purchasePrice) || 0;
+                  const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
+                  const total = Math.max(1, parseInt(formData.quantityTotal, 10) || 1);
+                  const effectiveCost = purchase - earned;
+                  return (
+                    <>
+                      <span className="text-base font-bold text-slate-900">
+                        {effectiveCost.toLocaleString('ja-JP')} 円
+                      </span>
+                      {total > 1 && (
+                        <span className="block text-xs text-slate-500 font-semibold">
+                          1個あたり {Math.round(effectiveCost / total).toLocaleString('ja-JP')} 円
+                        </span>
+                      )}
+                      <span className="block text-[11px] text-slate-400">購入金額 - 付与P</span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
