@@ -27,6 +27,16 @@ export interface GiftCard {
   updatedAt: string;
 }
 
+export interface PointSiteRedemption {
+  id: string;
+  userId: string;
+  siteName: string;   // モッピー・ハピタス等
+  amount: number;     // 還元額（円）
+  redeemedAt: string; // 還元日 YYYY-MM-DD
+  memo?: string;
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   userId: string;
@@ -44,8 +54,6 @@ export interface Product {
   saleDate?: string;
   memo?: string;
   extraPoints?: number[];
-  portalPoint?: number;
-  portalSite?: string;
   kaitoriPrice?: number;
   kaitoriPriceAt?: string;
   purchaseBreakdown?: PurchaseBreakdown;

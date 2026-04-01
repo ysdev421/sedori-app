@@ -17,7 +17,7 @@
   where,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Expense, ExpenseCategory, GiftCard, KaitoriPriceHistory, Product, ProductMaster, ProductTemplate, SaleRecord } from '@/types';
+import type { Expense, ExpenseCategory, GiftCard, KaitoriPriceHistory, PointSiteRedemption, Product, ProductMaster, ProductTemplate, SaleRecord } from '@/types';
 
 export async function addProductToFirestore(
   userId: string,
@@ -1252,5 +1252,43 @@ export async function getKaitoriPriceHistory(janCode: string): Promise<KaitoriPr
       } satisfies KaitoriPriceHistory;
     })
     .sort((a: KaitoriPriceHistory, b: KaitoriPriceHistory) => a.recordedAt.localeCompare(b.recordedAt));
+}
+
+// ポイントサイト還元履歴
+export async function getUserPointSiteRedemptions(userId: string): Promise<PointSiteRedemption[]> {
+  const q = query(collection(db, 'point_site_redemptions'), where('userId', '==', userId));
+  const snap = await getDocs(q);
+  return snap.docs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((d: any) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        userId: data.userId,
+        siteName: data.siteName,
+        amount: data.amount,
+        redeemedAt: toIso(data.redeemedAt),
+        memo: data.memo ?? undefined,
+        createdAt: toIso(data.createdAt),
+      } satisfies PointSiteRedemption;
+    })
+    .sort((a: PointSiteRedemption, b: PointSiteRedemption) => b.redeemedAt.localeCompare(a.redeemedAt));
+}
+
+export async function addPointSiteRedemption(
+  userId: string,
+  data: Omit<PointSiteRedemption, 'id' | 'userId' | 'createdAt'>
+): Promise<string> {
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+  const docRef = await addDoc(collection(db, 'point_site_redemptions'), {
+    ...clean,
+    userId,
+    createdAt: Timestamp.now(),
+  });
+  return docRef.id;
+}
+
+export async function deletePointSiteRedemption(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'point_site_redemptions', id));
 }
 

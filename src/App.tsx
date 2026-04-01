@@ -45,9 +45,12 @@ const AnnualSummaryScreen = lazy(() =>
 const GiftCardManager = lazy(() =>
   import('@/components/GiftCardManager').then((m) => ({ default: m.GiftCardManager }))
 );
+const PointSiteRedemptionManager = lazy(() =>
+  import('@/components/PointSiteRedemptionManager').then((m) => ({ default: m.PointSiteRedemptionManager }))
+);
 
 type Screen = 'summary' | 'list' | 'sale' | 'saleHistory' | 'admin';
-type AppView = 'system' | 'purchaseLocationMaster' | 'saleLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager' | 'expenseManager' | 'annualSummary' | 'giftCardManager';
+type AppView = 'system' | 'purchaseLocationMaster' | 'saleLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager' | 'expenseManager' | 'annualSummary' | 'giftCardManager' | 'pointSiteRedemptionManager';
 
 function App() {
   const { authLoading } = useAuth();
@@ -205,6 +208,8 @@ function App() {
                 <AnnualSummaryScreen userId={user.id} products={filteredProducts} />
               ) : appView === 'giftCardManager' ? (
                 <GiftCardManager userId={user.id} products={products} />
+              ) : appView === 'pointSiteRedemptionManager' ? (
+                <PointSiteRedemptionManager userId={user.id} />
               ) : appView === 'adminJanManager' && isAdmin ? (
                 <AdminJanManager />
               ) : null}
@@ -219,6 +224,7 @@ function App() {
                   { view: 'statusBatchManager' as const, label: 'ステータス\n一括管理', icon: RefreshCw, color: 'from-violet-100 to-purple-100 text-violet-600' },
                   { view: 'productMasterManager' as const, label: '商品マスタ\n管理', icon: BookOpen, color: 'from-emerald-100 to-green-100 text-emerald-600' },
                   { view: 'giftCardManager' as const, label: 'ギフトカード\n管理', icon: CreditCard, color: 'from-sky-100 to-indigo-100 text-sky-600' },
+                  { view: 'pointSiteRedemptionManager' as const, label: 'ポイントサイト\n還元管理', icon: History, color: 'from-violet-100 to-purple-100 text-violet-600' },
                   { view: 'expenseManager' as const, label: '経費管理', icon: Receipt, color: 'from-rose-100 to-pink-100 text-rose-600' },
                   { view: 'annualSummary' as const, label: '年間サマリー\n（確定申告用）', icon: FileText, color: 'from-amber-100 to-orange-100 text-amber-600' },
                   ...(isAdmin ? [{ view: 'adminJanManager' as const, label: 'JAN抽出/投入\n（管理者）', icon: Database, color: 'from-slate-100 to-slate-200 text-slate-600' }] : []),

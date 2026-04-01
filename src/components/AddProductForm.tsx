@@ -49,8 +49,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [janHint, setJanHint] = useState('');
   const [janNotFound, setJanNotFound] = useState(false);
   const [extraPoints, setExtraPoints] = useState<string[]>([]);
-  const [portalPoint, setPortalPoint] = useState('');
-  const [portalSite, setPortalSite] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [kaitoriLookup, setKaitoriLookup] = useState('');
@@ -299,7 +297,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
         status: formData.initialStatus,
         ...(formData.memo.trim() ? { memo: formData.memo.trim() } : {}),
         ...(purchaseBreakdown ? { purchaseBreakdown } : {}),
-        ...(portalPoint && parseFloat(portalPoint) > 0 ? { portalPoint: parseFloat(portalPoint), portalSite: portalSite.trim() || undefined } : {}),
       });
 
       await upsertProductTemplate(userId, {
@@ -341,8 +338,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
       });
       setJanHint('');
       setExtraPoints([]);
-      setPortalPoint('');
-      setPortalSite('');
       setShowBreakdown(false);
       setBreakdownGiftUsages([]);
       setBreakdownCash('');
@@ -615,29 +610,6 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                 )}
               </div>
             </div>
-            {/* ポータルサイト経由P */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">ポイントサイト経由P</label>
-                <NumericInput
-                  integer
-                  value={portalPoint}
-                  onChange={(e) => setPortalPoint(e.target.value)}
-                  className="input-field"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">サイト名</label>
-                <input
-                  type="text"
-                  value={portalSite}
-                  onChange={(e) => setPortalSite(e.target.value)}
-                  className="input-field"
-                  placeholder="モッピー・ハピタス等"
-                />
-              </div>
-            </div>
             <div className="rounded-xl bg-white/60 border border-white/80 px-3 py-2 flex items-center justify-between">
               <span className="text-sm text-slate-600">実質原価</span>
               <div className="text-right">
@@ -645,11 +617,10 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                   {(() => {
                     const purchase = parseFloat(formData.purchasePrice) || 0;
                     const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
-                    const portal = parseFloat(portalPoint) || 0;
-                    return (purchase - earned - portal).toLocaleString('ja-JP');
+                    return (purchase - earned).toLocaleString('ja-JP');
                   })()} 円
                 </span>
-                <span className="block text-[11px] text-slate-400">購入金額 - 付与P - ポイントサイトP</span>
+                <span className="block text-[11px] text-slate-400">購入金額 - 付与P</span>
               </div>
             </div>
           </div>
