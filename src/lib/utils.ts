@@ -32,13 +32,14 @@ export function getRemainingActualPayment(product: Product): number {
 }
 
 export function getEffectiveCost(product: Product): number {
+  const portalP = product.portalPoint ?? 0;
   if (product.purchaseBreakdown) {
     const { cash, giftCardUsages, pointUse } = product.purchaseBreakdown;
     const giftCardRealCost = giftCardUsages.reduce((s, u) => s + u.realCost, 0);
     const giftCardEarnedP = giftCardUsages.reduce((s, u) => s + u.earnedPointAlloc, 0);
-    return cash + giftCardRealCost + pointUse - giftCardEarnedP - product.point;
+    return cash + giftCardRealCost + pointUse - giftCardEarnedP - product.point - portalP;
   }
-  return product.purchasePrice - product.point;
+  return product.purchasePrice - product.point - portalP;
 }
 
 export function calculateProfit(product: Product): number {
@@ -48,7 +49,7 @@ export function calculateProfit(product: Product): number {
 
 export function calculatePointProfit(product: Product): number {
   if (!product.salePrice) return 0;
-  return product.salePrice - getActualPayment(product);
+  return product.salePrice - getActualPayment(product) - (product.portalPoint ?? 0);
 }
 
 export function calculateProfitSummary(products: Product[]): ProfitSummary {

@@ -45,6 +45,8 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
     saleLocation: product.saleLocation || '',
     saleDate: product.saleDate || '',
     memo: product.memo || '',
+    portalPoint: String(product.portalPoint || ''),
+    portalSite: product.portalSite || '',
   });
   const [extraPoints, setExtraPoints] = useState<string[]>(extraPointsInitial.map(String));
   const [error, setError] = useState('');
@@ -138,6 +140,8 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
         purchaseDate: formData.purchaseDate,
         purchaseLocation: formData.purchaseLocation,
         memo: formData.memo.trim() || undefined,
+        portalPoint: parseFloat(formData.portalPoint) > 0 ? parseFloat(formData.portalPoint) : undefined,
+        portalSite: formData.portalSite.trim() || undefined,
       };
 
       if (formData.status === 'sold') {
@@ -434,14 +438,37 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                 )}
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">ポイントサイト経由P</label>
+                <NumericInput
+                  integer
+                  value={formData.portalPoint}
+                  onChange={(e) => setFormData({ ...formData, portalPoint: e.target.value })}
+                  className="input-field"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">サイト名</label>
+                <input
+                  type="text"
+                  value={formData.portalSite}
+                  onChange={(e) => setFormData({ ...formData, portalSite: e.target.value })}
+                  className="input-field"
+                  placeholder="モッピー・ハピタス等"
+                />
+              </div>
+            </div>
             <div className="rounded-xl bg-white/60 border border-white/80 px-3 py-2 flex items-center justify-between">
               <span className="text-sm text-slate-600">実質原価</span>
               <div className="text-right">
                 {(() => {
                   const purchase = parseFloat(formData.purchasePrice) || 0;
                   const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
+                  const portal = parseFloat(formData.portalPoint) || 0;
                   const total = Math.max(1, parseInt(formData.quantityTotal, 10) || 1);
-                  const effectiveCost = purchase - earned;
+                  const effectiveCost = purchase - earned - portal;
                   return (
                     <>
                       <span className="text-base font-bold text-slate-900">
@@ -452,7 +479,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                           1個あたり {Math.round(effectiveCost / total).toLocaleString('ja-JP')} 円
                         </span>
                       )}
-                      <span className="block text-[11px] text-slate-400">購入金額 - 付与P</span>
+                      <span className="block text-[11px] text-slate-400">購入金額 - 付与P - ポイントサイトP</span>
                     </>
                   );
                 })()}

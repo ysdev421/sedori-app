@@ -44,6 +44,8 @@ export interface Product {
   saleDate?: string;
   memo?: string;
   extraPoints?: number[];
+  portalPoint?: number;
+  portalSite?: string;
   kaitoriPrice?: number;
   kaitoriPriceAt?: string;
   purchaseBreakdown?: PurchaseBreakdown;
