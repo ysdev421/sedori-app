@@ -1288,6 +1288,14 @@ export async function addPointSiteRedemption(
   return docRef.id;
 }
 
+export async function updatePointSiteRedemption(
+  id: string,
+  data: Omit<PointSiteRedemption, 'id' | 'userId' | 'createdAt'>
+): Promise<void> {
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+  await updateDoc(doc(db, 'point_site_redemptions', id), clean);
+}
+
 export async function deletePointSiteRedemption(id: string): Promise<void> {
   await deleteDoc(doc(db, 'point_site_redemptions', id));
 }

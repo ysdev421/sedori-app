@@ -99,7 +99,7 @@ service cloud.firestore {
     }
 
     match /point_site_redemptions/{docId} {
-      allow read, delete: if isOwner(resource.data.userId);
+      allow read, update, delete: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
     }
 
