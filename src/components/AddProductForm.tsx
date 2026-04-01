@@ -52,6 +52,10 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [showProrate, setShowProrate] = useState(false);
   const [prorateTotal, setProrateTotal] = useState('');
   const [proratePoint, setProratePoint] = useState('');
+  const [groupMode, setGroupMode] = useState(false);
+  const [groupId, setGroupId] = useState('');
+  const [groupCount, setGroupCount] = useState(0);
+  const [savedProduct, setSavedProduct] = useState<{ productName: string } | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [mobileCameraEnabled, setMobileCameraEnabled] = useState(false);
   const [kaitoriLookup, setKaitoriLookup] = useState('');
@@ -287,6 +291,13 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
         };
       }
 
+      // まとめ買いグループID（グループモード時）
+      const activeGroupId = groupMode ? (groupId || (() => {
+        const id = crypto.randomUUID();
+        setGroupId(id);
+        return id;
+      })()) : undefined;
+
       await createProduct({
         ...(normalizedJan ? { janCode: normalizedJan } : {}),
         productName: formData.productName,
@@ -300,6 +311,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
         status: formData.initialStatus,
         ...(formData.memo.trim() ? { memo: formData.memo.trim() } : {}),
         ...(purchaseBreakdown ? { purchaseBreakdown } : {}),
+        ...(activeGroupId ? { purchaseGroupId: activeGroupId } : {}),
       });
 
       await upsertProductTemplate(userId, {
@@ -328,17 +340,18 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
         );
       }
 
-      setFormData({
+      const savedName = formData.productName;
+      setFormData((prev) => ({
         janCode: '',
         productName: '',
-        initialStatus: 'pending',
+        initialStatus: prev.initialStatus,
         quantity: '1',
         purchasePrice: '0',
         point: '0',
-        purchaseDate: new Date().toISOString().split('T')[0],
-        purchaseLocation: purchaseLocations[0] || 'メルカリ',
+        purchaseDate: prev.purchaseDate,
+        purchaseLocation: prev.purchaseLocation,
         memo: '',
-      });
+      }));
       setJanHint('');
       setExtraPoints([]);
       setShowProrate(false);
@@ -348,7 +361,13 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
       setBreakdownGiftUsages([]);
       setBreakdownCash('');
       setBreakdownPointUse('0');
-      onClose?.();
+
+      if (groupMode) {
+        setGroupCount((c) => c + 1);
+        setSavedProduct({ productName: savedName });
+      } else {
+        onClose?.();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');
     }
@@ -360,12 +379,47 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
     <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto" onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()}>
       <div className="min-h-full w-full flex items-end pt-12">
         <div className="w-full bg-white rounded-t-2xl p-6 animate-slide-in" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-900">商品を追加</h2>
           <button onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()} className="p-2 hover:bg-gray-100 rounded-lg transition">
             <X className="w-6 h-6 text-gray-600" />
           </button>
         </div>
+
+        {/* まとめ買いモード */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !groupMode;
+              setGroupMode(next);
+              if (!next) { setGroupId(''); setGroupCount(0); setSavedProduct(null); }
+            }}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${groupMode ? 'bg-violet-100 border-violet-300 text-violet-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+          >
+            <span>{groupMode ? '🛒 まとめ買いモード ON' : '🛒 まとめ買いモード'}</span>
+          </button>
+          {groupMode && groupCount > 0 && (
+            <span className="text-xs text-violet-600 font-semibold">{groupCount}件登録済み</span>
+          )}
+          {groupMode && groupCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setGroupMode(false); setGroupId(''); setGroupCount(0); setSavedProduct(null); onClose?.(); }}
+              className="text-xs text-slate-500 hover:text-slate-700 underline"
+            >
+              完了して閉じる
+            </button>
+          )}
+        </div>
+
+        {/* 登録完了バナー */}
+        {savedProduct && (
+          <div className="mb-3 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 flex items-center justify-between">
+            <span className="text-sm text-emerald-700 font-semibold">✓ 「{savedProduct.productName}」を登録しました</span>
+            <button type="button" onClick={() => setSavedProduct(null)} className="text-emerald-400 hover:text-emerald-600 ml-2"><X className="w-4 h-4" /></button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isKaitori && (

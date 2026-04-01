@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { Copy, Search, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Search, SlidersHorizontal } from 'lucide-react';
 import { RichDatePicker } from '@/components/RichDatePicker';
 import { EditProductForm } from './EditProductForm';
 import { calculatePointProfit, calculateProfit, copyToClipboard, formatCurrency, formatDate, getEffectiveCost } from '@/lib/utils';
@@ -26,6 +26,7 @@ const toTime = (dateString?: string) => {
 export function ProductList({ products, userId, onDelete, initialListTab, hideTabSelector = false }: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const [query, setQuery] = useState('');
   const fmt = (d: Date) => d.toISOString().split('T')[0];
@@ -203,6 +204,54 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
   };
 
 
+  const renderDateItems = (dateItems: Product[]) => {
+    const grouped: Array<{ groupId: string | null; products: Product[] }> = [];
+    const groupMap = new Map<string, Product[]>();
+    for (const p of dateItems) {
+      if (p.purchaseGroupId) {
+        if (!groupMap.has(p.purchaseGroupId)) {
+          groupMap.set(p.purchaseGroupId, []);
+          grouped.push({ groupId: p.purchaseGroupId, products: groupMap.get(p.purchaseGroupId)! });
+        }
+        groupMap.get(p.purchaseGroupId)!.push(p);
+      } else {
+        grouped.push({ groupId: null, products: [p] });
+      }
+    }
+    return grouped.map(({ groupId, products }, idx) => {
+      if (!groupId) return <div key={products[0].id}>{renderProductCard(products[0], false)}</div>;
+      const expanded = expandedGroups.has(groupId);
+      const totalCost = products.reduce((s, p) => s + getEffectiveCost(p), 0);
+      return (
+        <div key={`group-${groupId}-${idx}`} className="rounded-xl border border-violet-200 bg-violet-50/60 overflow-hidden">
+          <button
+            type="button"
+            className="w-full flex items-center justify-between px-3 py-2 text-left"
+            onClick={() => setExpandedGroups((prev) => {
+              const next = new Set(prev);
+              expanded ? next.delete(groupId) : next.add(groupId);
+              return next;
+            })}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-200 text-violet-700 shrink-0">まとめ買い {products.length}件</span>
+              <span className="text-xs text-slate-600 truncate">{products.map((p) => p.productName).join('・')}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              <span className="text-xs font-semibold text-slate-700">{formatCurrency(totalCost)}</span>
+              {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </div>
+          </button>
+          {expanded && (
+            <div className="px-2 pb-2 space-y-2 border-t border-violet-100 pt-2">
+              {products.map((p) => renderProductCard(p, false))}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   const section = (title: string, color: string, items: Product[]) => {
     if (items.length === 0) return null;
     const byDate = Object.entries(
@@ -223,7 +272,7 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
           {byDate.map(([date, dateItems]) => (
             <div key={date} className="space-y-2">
               <p className="px-1 text-[11px] text-slate-500 whitespace-nowrap">{formatDate(date)}</p>
-              <div className="space-y-3">{dateItems.map((p) => renderProductCard(p, false))}</div>
+              <div className="space-y-3">{renderDateItems(dateItems)}</div>
             </div>
           ))}
         </div>
@@ -514,7 +563,7 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
                 <div key={date} className="space-y-2">
                   <p className="px-1 text-[11px] text-slate-500 whitespace-nowrap">{formatDate(date)}</p>
                   <div className="space-y-3">
-                    {items.map((p) => renderProductCard(p, false))}
+                    {renderDateItems(items)}
                   </div>
                 </div>
               ))}
