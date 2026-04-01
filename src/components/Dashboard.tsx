@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { DollarSign, Package, TrendingUp } from 'lucide-react';
 import { calculateProfit, calculatePointProfit, calculateProfitSummary, formatCurrency, getActualPayment, getRemainingActualPayment } from '@/lib/utils';
 import type { PointSiteRedemption, Product } from '@/types';
@@ -127,8 +127,9 @@ function buildSaleLocationSeries(products: Product[]) {
 function buildPurchaseLocationSeries(products: Product[]) {
   const map = new Map<string, number>();
   for (const p of products) {
+    if (p.status !== 'inventory') continue;
     const loc = p.purchaseLocation || '不明';
-    map.set(loc, (map.get(loc) || 0) + (p.purchasePrice || 0));
+    map.set(loc, (map.get(loc) || 0) + getRemainingActualPayment(p));
   }
   return Array.from(map.entries()).sort(([, a], [, b]) => b - a).map(([label, value]) => ({ label, value }));
 }
@@ -266,7 +267,7 @@ export function Dashboard({ products, allProducts, periodFilter, showMoM = true,
           <DonutChart data={saleLocations} />
         </div>
         <div className="glass-panel p-4 bg-gradient-to-br from-white/80 to-cyan-50/70">
-          <p className="text-xs font-semibold text-slate-600 mb-3">購入先別仕入れ</p>
+          <p className="text-xs font-semibold text-slate-600 mb-3">在庫の購入先別金額</p>
           <DonutChart data={purchaseLocations} />
         </div>
       </div>

@@ -55,6 +55,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [groupMode, setGroupMode] = useState(false);
   const [groupProrateTotal, setGroupProrateTotal] = useState('');
   const [groupProratePoint, setGroupProratePoint] = useState('');
+  const [groupTotalQuantity, setGroupTotalQuantity] = useState('');
   const [groupId, setGroupId] = useState('');
   const [groupCount, setGroupCount] = useState(0);
   const [savedProduct, setSavedProduct] = useState<{ productName: string } | null>(null);
@@ -167,6 +168,16 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
     setJanNotFound(false);
     setJanHint(resolvedName ? '商品マスタ登録内容を反映しました' : '');
   }, [initialJanCode, initialProductName, masters, templates]);
+
+  useEffect(() => {
+    if (!groupMode) return;
+    const total = parseFloat(groupProrateTotal) || 0;
+    const totalQty = parseInt(groupTotalQuantity, 10) || 0;
+    const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
+    if (total <= 0 || totalQty <= 0) return;
+    const allocated = Math.max(0, Math.round(total * (qty / totalQty)));
+    setFormData((prev) => (prev.purchasePrice === String(allocated) ? prev : { ...prev, purchasePrice: String(allocated) }));
+  }, [groupMode, groupProrateTotal, groupTotalQuantity, formData.quantity]);
 
   useEffect(() => {
     if (!groupMode) return;
@@ -411,6 +422,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                 setSavedProduct(null);
                 setGroupProrateTotal('');
                 setGroupProratePoint('');
+                setGroupTotalQuantity('');
               }
             }}
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${groupMode ? 'bg-violet-100 border-violet-300 text-violet-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
@@ -436,7 +448,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
             <p className="text-[11px] text-violet-700 font-semibold mb-2">
               グループ全体値を1回入力すると、各商品の付与Pを自動計算します
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[11px] text-slate-600 mb-0.5">グループ合計金額</label>
                 <NumericInput
@@ -457,7 +469,23 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                   placeholder="例: 50"
                 />
               </div>
+              <div>
+                <label className="block text-[11px] text-slate-600 mb-0.5">グループ総数量</label>
+                <NumericInput
+                  integer
+                  min={1}
+                  value={groupTotalQuantity}
+                  onChange={(e) => setGroupTotalQuantity(e.target.value)}
+                  className="input-field py-1.5 text-sm"
+                  placeholder="例: 10"
+                />
+              </div>
             </div>
+            {parseFloat(groupProrateTotal) > 0 && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (
+              <p className="mt-2 text-[11px] text-violet-700">
+                総数量を入れると、この商品の数量から購入金額合計を自動配分します
+              </p>
+            )}
           </div>
         )}
 
@@ -663,10 +691,14 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                   integer
                   value={formData.purchasePrice}
                   onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                  disabled={groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0}
                   required
                   className="input-field"
                   placeholder="0"
                 />
+                {groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0 && (
+                  <p className="mt-1 text-xs text-violet-600">グループ総数量ベースで自動計算中です</p>
+                )}
                 {fieldErrors.purchasePrice && <p className="mt-1 text-xs text-rose-600">{fieldErrors.purchasePrice}</p>}
               </div>
               <div>
