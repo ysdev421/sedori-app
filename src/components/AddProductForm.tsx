@@ -53,6 +53,8 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [prorateTotal, setProrateTotal] = useState('');
   const [proratePoint, setProratePoint] = useState('');
   const [groupMode, setGroupMode] = useState(false);
+  const [groupProrateTotal, setGroupProrateTotal] = useState('');
+  const [groupProratePoint, setGroupProratePoint] = useState('');
   const [groupId, setGroupId] = useState('');
   const [groupCount, setGroupCount] = useState(0);
   const [savedProduct, setSavedProduct] = useState<{ productName: string } | null>(null);
@@ -165,6 +167,16 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
     setJanNotFound(false);
     setJanHint(resolvedName ? '商品マスタ登録内容を反映しました' : '');
   }, [initialJanCode, initialProductName, masters, templates]);
+
+  useEffect(() => {
+    if (!groupMode) return;
+    const total = parseFloat(groupProrateTotal) || 0;
+    const totalP = parseFloat(groupProratePoint) || 0;
+    const price = parseFloat(formData.purchasePrice) || 0;
+    if (total <= 0 || totalP < 0 || price < 0) return;
+    const allocated = Math.max(0, Math.round(totalP * (price / total)));
+    setFormData((prev) => (prev.point === String(allocated) ? prev : { ...prev, point: String(allocated) }));
+  }, [groupMode, groupProrateTotal, groupProratePoint, formData.purchasePrice]);
 
   const fillProductNameByJan = async (janInput: string) => {
     const janCode = normalizeJanCode(janInput);
@@ -393,7 +405,13 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
             onClick={() => {
               const next = !groupMode;
               setGroupMode(next);
-              if (!next) { setGroupId(''); setGroupCount(0); setSavedProduct(null); }
+              if (!next) {
+                setGroupId('');
+                setGroupCount(0);
+                setSavedProduct(null);
+                setGroupProrateTotal('');
+                setGroupProratePoint('');
+              }
             }}
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${groupMode ? 'bg-violet-100 border-violet-300 text-violet-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
           >
@@ -412,6 +430,36 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
             </button>
           )}
         </div>
+
+        {groupMode && (
+          <div className="mb-4 rounded-xl border border-violet-200 bg-violet-50/70 p-3">
+            <p className="text-[11px] text-violet-700 font-semibold mb-2">
+              グループ全体値を1回入力すると、各商品の付与Pを自動計算します
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] text-slate-600 mb-0.5">グループ合計金額</label>
+                <NumericInput
+                  integer
+                  value={groupProrateTotal}
+                  onChange={(e) => setGroupProrateTotal(e.target.value)}
+                  className="input-field py-1.5 text-sm"
+                  placeholder="例: 5000"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-slate-600 mb-0.5">グループ合計P</label>
+                <NumericInput
+                  integer
+                  value={groupProratePoint}
+                  onChange={(e) => setGroupProratePoint(e.target.value)}
+                  className="input-field py-1.5 text-sm"
+                  placeholder="例: 50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 登録完了バナー */}
         {savedProduct && (
@@ -636,11 +684,12 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
                 <button
                   type="button"
                   onClick={() => setShowProrate((v) => !v)}
-                  className="mt-1.5 text-xs text-violet-600 hover:text-violet-700 font-semibold"
+                  disabled={groupMode}
+                  className="mt-1.5 text-xs text-violet-600 hover:text-violet-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {showProrate ? '▲ 按分を閉じる' : '÷ まとめ買い按分'}
+                  {groupMode ? 'グループ自動按分中' : showProrate ? '▲ 按分を閉じる' : '÷ まとめ買い按分'}
                 </button>
-                {showProrate && (
+                {!groupMode && showProrate && (
                   <div className="mt-2 p-2 rounded-xl bg-violet-50 border border-violet-100 space-y-2">
                     <p className="text-[11px] text-violet-700 font-semibold">まとめ買い全体の数値を入力すると、この商品の割合で自動計算します</p>
                     <div className="grid grid-cols-2 gap-2">

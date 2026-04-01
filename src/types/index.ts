@@ -1,27 +1,27 @@
 export interface GiftCardUsage {
   giftCardId: string;
   brand: string;
-  amount: number;         // 使用額
-  realCost: number;       // 実コスト（使用額 / 額面 × 購入価格）
-  earnedPointAlloc: number; // 付与P按分（使用額 / 額面 × 付与P）
+  amount: number;         // 闖ｴ・ｿ騾包ｽｨ鬯倥・
+  realCost: number;       // 陞ｳ貅倥＆郢ｧ・ｹ郢晁肩・ｼ莠包ｽｽ・ｿ騾包ｽｨ鬯倥・/ 鬯伜涵謫・・・・髮会ｽｼ陷茨ｽ･關難ｽ｡隴ｬ・ｼ繝ｻ繝ｻ
+  earnedPointAlloc: number; // 闔牙・ｽｸ蛯倩ｬ也甥繝ｻ繝ｻ莠包ｽｽ・ｿ騾包ｽｨ鬯倥・/ 鬯伜涵謫・・・・闔牙・ｽｸ蛯倥・繝ｻ
 }
 
 export interface PurchaseBreakdown {
   cash: number;
   giftCardUsages: GiftCardUsage[];
-  pointUse: number; // ポイント支払い分
+  pointUse: number; // 郢晄亢縺・ｹ晢ｽｳ郢晏沺鬮ｪ隰・ｼ費ｼ櫁崕繝ｻ
 }
 
 export interface GiftCard {
   id: string;
   userId: string;
   brand: 'Apple' | 'Amazon' | 'Google Play' | 'その他';
-  purchaseSource: string;   // 購入元（楽天など）
+  purchaseSource: string;   // 髮会ｽｼ陷茨ｽ･陷医・・ｼ蝓滂ｽ･・ｽ陞滂ｽｩ邵ｺ・ｪ邵ｺ・ｩ繝ｻ繝ｻ
   purchasedAt: string;
-  faceValue: number;        // 額面
-  purchasedPrice: number;   // 実際に払った金額
-  earnedPoint: number;      // 購入時付与ポイント
-  balance: number;          // 現在残高
+  faceValue: number;        // 鬯伜涵謫・
+  purchasedPrice: number;   // 陞ｳ貊・怙邵ｺ・ｫ隰・ｼ披夢邵ｺ貊・横鬯倥・
+  earnedPoint: number;      // 髮会ｽｼ陷茨ｽ･隴弱ｆ・ｻ蛟・ｽｸ蠑ｱ繝ｻ郢ｧ・､郢晢ｽｳ郢昴・
+  balance: number;          // 霑ｴ・ｾ陜ｨ・ｨ隹ｿ遏ｩ・ｫ繝ｻ
   memo?: string;
   createdAt: string;
   updatedAt: string;
@@ -30,9 +30,10 @@ export interface GiftCard {
 export interface PointSiteRedemption {
   id: string;
   userId: string;
-  siteName: string;   // モッピー・ハピタス等
-  amount: number;     // 還元額（円）
-  redeemedAt: string; // 還元日 YYYY-MM-DD
+  siteName: string;
+  redeemTo?: string;   // 郢晢ｽ｢郢昴・繝ｴ郢晢ｽｼ郢晢ｽｻ郢昜ｸ翫Χ郢ｧ・ｿ郢ｧ・ｹ驕ｲ繝ｻ
+  amount: number;     // 鬩阪・繝ｻ鬯俶誓・ｼ莠･繝ｻ繝ｻ繝ｻ
+  redeemedAt: string; // 鬩阪・繝ｻ隴鯉ｽ･ YYYY-MM-DD
   memo?: string;
   createdAt: string;
 }

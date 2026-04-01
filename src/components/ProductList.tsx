@@ -9,6 +9,7 @@ interface ProductListProps {
   products: Product[];
   userId: string;
   onDelete: (id: string) => void;
+  onReallocateGroupPoints?: (updates: Array<{ id: string; point: number }>) => Promise<void> | void;
   initialListTab?: ListTab;
   hideTabSelector?: boolean;
 }
@@ -23,10 +24,47 @@ const toTime = (dateString?: string) => {
   return Number.isNaN(t) ? 0 : t;
 };
 
-export function ProductList({ products, userId, onDelete, initialListTab, hideTabSelector = false }: ProductListProps) {
+const distributeByWeights = (total: number, weights: number[]): number[] => {
+  if (weights.length === 0) return [];
+  const roundedTotal = Math.max(0, Math.round(total));
+  const sum = weights.reduce((s, w) => s + Math.max(0, w), 0);
+  if (sum <= 0) {
+    const base = Math.floor(roundedTotal / weights.length);
+    const remain = roundedTotal - base * weights.length;
+    return weights.map((_, idx) => base + (idx < remain ? 1 : 0));
+  }
+
+  const rows = weights.map((w, idx) => {
+    const raw = (roundedTotal * Math.max(0, w)) / sum;
+    const floor = Math.floor(raw);
+    return { idx, floor, frac: raw - floor };
+  });
+  const used = rows.reduce((s, r) => s + r.floor, 0);
+  let remain = roundedTotal - used;
+  rows.sort((a, b) => b.frac - a.frac);
+  for (let i = 0; i < rows.length && remain > 0; i += 1) {
+    rows[i].floor += 1;
+    remain -= 1;
+  }
+  rows.sort((a, b) => a.idx - b.idx);
+  return rows.map((r) => r.floor);
+};
+
+export function ProductList({
+  products,
+  userId,
+  onDelete,
+  onReallocateGroupPoints,
+  initialListTab,
+  hideTabSelector = false,
+}: ProductListProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [reallocateTarget, setReallocateTarget] = useState<{ groupId: string; products: Product[] } | null>(null);
+  const [reallocatePointTotal, setReallocatePointTotal] = useState('');
+  const [reallocateSaving, setReallocateSaving] = useState(false);
+  const [reallocateError, setReallocateError] = useState('');
 
   const [query, setQuery] = useState('');
   const fmt = (d: Date) => d.toISOString().split('T')[0];
@@ -203,6 +241,35 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
     return '未着';
   };
 
+  const openReallocateModal = (groupId: string, groupProducts: Product[]) => {
+    const currentTotal = groupProducts.reduce((sum, p) => sum + Math.max(0, Math.round(p.point || 0)), 0);
+    setReallocateTarget({ groupId, products: groupProducts });
+    setReallocatePointTotal(String(currentTotal));
+    setReallocateError('');
+  };
+
+  const submitReallocate = async () => {
+    if (!reallocateTarget || !onReallocateGroupPoints) return;
+    const totalPoint = Math.max(0, Math.round(parseFloat(reallocatePointTotal) || 0));
+    const weights = reallocateTarget.products.map((p) => Math.max(0, p.purchasePrice || 0));
+    const allocated = distributeByWeights(totalPoint, weights);
+    const updates = reallocateTarget.products.map((p, idx) => ({
+      id: p.id,
+      point: allocated[idx] || 0,
+    }));
+
+    setReallocateSaving(true);
+    setReallocateError('');
+    try {
+      await onReallocateGroupPoints(updates);
+      setReallocateTarget(null);
+    } catch (e) {
+      setReallocateError(e instanceof Error ? e.message : 'ポイント再按分に失敗しました');
+    } finally {
+      setReallocateSaving(false);
+    }
+  };
+
 
   const renderDateItems = (dateItems: Product[]) => {
     const grouped: Array<{ groupId: string | null; products: Product[] }> = [];
@@ -238,6 +305,18 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
               <span className="text-xs text-slate-600 truncate">{products.map((p) => p.productName).join('・')}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-2">
+              {onReallocateGroupPoints && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openReallocateModal(groupId, products);
+                  }}
+                  className="px-2 py-1 rounded-md border border-violet-300 bg-white text-violet-700 text-[11px] font-semibold hover:bg-violet-50"
+                >
+                  P再按分
+                </button>
+              )}
               <span className="text-xs font-semibold text-slate-700">{formatCurrency(totalCost)}</span>
               {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
             </div>
@@ -584,6 +663,49 @@ export function ProductList({ products, userId, onDelete, initialListTab, hideTa
           onDelete={onDelete}
           onClose={() => setEditingProduct(null)}
         />
+      )}
+
+      {reallocateTarget && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white border border-violet-200 shadow-xl p-4 space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">まとめ買いポイント再按分</h3>
+            <p className="text-xs text-slate-600">
+              対象 {reallocateTarget.products.length}件に、購入金額比で再按分します。
+            </p>
+            <div>
+              <label className="block text-xs text-slate-600 mb-1">グループ合計ポイント</label>
+              <input
+                type="number"
+                min={0}
+                value={reallocatePointTotal}
+                onChange={(e) => setReallocatePointTotal(e.target.value)}
+                className="input-field"
+                placeholder="0"
+              />
+            </div>
+            {reallocateError && (
+              <p className="text-xs text-rose-600">{reallocateError}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReallocateTarget(null)}
+                disabled={reallocateSaving}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={submitReallocate}
+                disabled={reallocateSaving}
+                className="px-3 py-2 rounded-lg bg-violet-600 text-white"
+              >
+                {reallocateSaving ? '更新中...' : '再按分する'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

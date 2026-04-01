@@ -1266,6 +1266,7 @@ export async function getUserPointSiteRedemptions(userId: string): Promise<Point
         id: d.id,
         userId: data.userId,
         siteName: data.siteName,
+        redeemTo: data.redeemTo ?? undefined,
         amount: data.amount,
         redeemedAt: toIso(data.redeemedAt),
         memo: data.memo ?? undefined,

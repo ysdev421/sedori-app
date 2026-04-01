@@ -2,10 +2,16 @@ import { useEffect, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { NumericInput } from '@/components/NumericInput';
 import { RichDatePicker } from '@/components/RichDatePicker';
-import { addPointSiteRedemption, deletePointSiteRedemption, getUserPointSiteRedemptions, updatePointSiteRedemption } from '@/lib/firestore';
+import {
+  addPointSiteRedemption,
+  deletePointSiteRedemption,
+  getUserPointSiteRedemptions,
+  updatePointSiteRedemption,
+} from '@/lib/firestore';
 import type { PointSiteRedemption } from '@/types';
 
 const SITE_SUGGESTIONS = ['モッピー', 'ハピタス', 'Powl', 'ポイントインカム', 'その他'];
+const REDEEM_TO_SUGGESTIONS = ['Amazonギフト', 'PayPay', '楽天ポイント', 'dポイント', '現金', 'その他'];
 
 interface PointSiteRedemptionManagerProps {
   userId: string;
@@ -14,6 +20,7 @@ interface PointSiteRedemptionManagerProps {
 function emptyForm() {
   return {
     siteName: '',
+    redeemTo: '',
     amount: '',
     redeemedAt: new Date().toISOString().split('T')[0],
     memo: '',
@@ -39,7 +46,9 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
     }
   };
 
-  useEffect(() => { void load(); }, [userId]);
+  useEffect(() => {
+    void load();
+  }, [userId]);
 
   const openAdd = () => {
     setEditingRecord(null);
@@ -50,7 +59,13 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
 
   const openEdit = (r: PointSiteRedemption) => {
     setEditingRecord(r);
-    setForm({ siteName: r.siteName, amount: String(r.amount), redeemedAt: r.redeemedAt, memo: r.memo || '' });
+    setForm({
+      siteName: r.siteName,
+      redeemTo: r.redeemTo || '',
+      amount: String(r.amount),
+      redeemedAt: r.redeemedAt,
+      memo: r.memo || '',
+    });
     setError('');
     setShowForm(true);
   };
@@ -59,13 +74,25 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
     e.preventDefault();
     setError('');
     const amount = parseFloat(form.amount) || 0;
-    if (!form.siteName.trim()) { setError('サイト名を入力してください'); return; }
-    if (amount <= 0) { setError('還元額を入力してください'); return; }
+    if (!form.siteName.trim()) {
+      setError('サイト名を入力してください');
+      return;
+    }
+    if (!form.redeemTo.trim()) {
+      setError('還元先を入力してください');
+      return;
+    }
+    if (amount <= 0) {
+      setError('還元額を入力してください');
+      return;
+    }
+
     setSaving(true);
     try {
       if (editingRecord) {
         await updatePointSiteRedemption(editingRecord.id, {
           siteName: form.siteName.trim(),
+          redeemTo: form.redeemTo.trim(),
           amount,
           redeemedAt: form.redeemedAt,
           memo: form.memo.trim() || undefined,
@@ -73,6 +100,7 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
       } else {
         await addPointSiteRedemption(userId, {
           siteName: form.siteName.trim(),
+          redeemTo: form.redeemTo.trim(),
           amount,
           redeemedAt: form.redeemedAt,
           memo: form.memo.trim() || undefined,
@@ -122,7 +150,7 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
             </button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   サイト名 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 text-white">必須</span>
@@ -136,9 +164,31 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
                   placeholder="モッピー・ハピタス等"
                 />
                 <datalist id="site-suggestions">
-                  {SITE_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
+                  {SITE_SUGGESTIONS.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
                 </datalist>
               </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  還元先 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 text-white">必須</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.redeemTo}
+                  onChange={(e) => setForm({ ...form, redeemTo: e.target.value })}
+                  list="redeem-to-suggestions"
+                  className="input-field"
+                  placeholder="Amazonギフト・PayPay等"
+                />
+                <datalist id="redeem-to-suggestions">
+                  {REDEEM_TO_SUGGESTIONS.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
                   還元額（円） <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 text-white">必須</span>
@@ -152,11 +202,9 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
                 />
               </div>
             </div>
-            <RichDatePicker
-              label="還元日"
-              value={form.redeemedAt}
-              onChange={(v) => setForm({ ...form, redeemedAt: v })}
-            />
+
+            <RichDatePicker label="還元日" value={form.redeemedAt} onChange={(v) => setForm({ ...form, redeemedAt: v })} />
+
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">メモ</label>
               <input
@@ -167,6 +215,7 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
                 placeholder="任意"
               />
             </div>
+
             {error && <p className="text-xs text-rose-600">{error}</p>}
             <button type="submit" disabled={saving} className="btn-primary w-full py-2.5 text-sm">
               {saving ? <Loader2 className="w-4 h-4 animate-spin inline-block mr-1" /> : null}
@@ -185,7 +234,9 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
 
       {loading ? (
         <div className="space-y-2">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />)}
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-14 rounded-xl bg-slate-100 animate-pulse" />
+          ))}
         </div>
       ) : records.length === 0 ? (
         <div className="glass-panel text-center py-8">
@@ -197,8 +248,9 @@ export function PointSiteRedemptionManager({ userId }: PointSiteRedemptionManage
           {records.map((r) => (
             <div key={r.id} className="glass-panel px-3 py-2.5 flex items-center gap-3">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-bold text-slate-800">{r.siteName}</span>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">{r.redeemTo || '未設定'}</span>
                   {r.memo && <span className="text-[11px] text-slate-400 truncate">{r.memo}</span>}
                 </div>
                 <span className="text-xs text-slate-400">{r.redeemedAt}</span>

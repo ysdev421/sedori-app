@@ -135,6 +135,14 @@ function App() {
     });
   };
 
+  const reallocateGroupPoints = async (updates: Array<{ id: string; point: number }>) => {
+    await Promise.all(
+      updates.map((row) =>
+        updateProductData(row.id, { point: Math.max(0, Math.round(row.point || 0)) })
+      )
+    );
+  };
+
   const changePeriodFilter = (value: 'thisMonth' | 'lastMonth' | 'thisYear' | 'all') => {
     setDashboardLoading(true);
     setPeriodFilter(value);
@@ -319,7 +327,13 @@ function App() {
                   商品登録
                 </button>
               </div>
-              <ProductList products={filteredProducts} userId={user.id} onDelete={deleteProductData} initialListTab="inventory" />
+              <ProductList
+                products={filteredProducts}
+                userId={user.id}
+                onDelete={deleteProductData}
+                onReallocateGroupPoints={reallocateGroupPoints}
+                initialListTab="inventory"
+              />
             </section>
           ) : screen === 'sale' ? (
             <section>
