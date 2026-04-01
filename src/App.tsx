@@ -5,7 +5,8 @@ import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { LoginForm } from '@/components/LoginForm';
 import { Header } from '@/components/Header';
-import { addStatusBatchLogToFirestore } from '@/lib/firestore';
+import { addStatusBatchLogToFirestore, getUserPointSiteRedemptions } from '@/lib/firestore';
+import type { PointSiteRedemption } from '@/types';
 
 const Dashboard = lazy(() => import('@/components/Dashboard').then((m) => ({ default: m.Dashboard })));
 const ProductList = lazy(() => import('@/components/ProductList').then((m) => ({ default: m.ProductList })));
@@ -72,6 +73,12 @@ function App() {
   const [screen, setScreen] = useState<Screen>('list');
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [redemptions, setRedemptions] = useState<PointSiteRedemption[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    getUserPointSiteRedemptions(user.id).then(setRedemptions).catch(() => setRedemptions([]));
+  }, [user]);
 
   const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || '')
     .split(',')
@@ -296,7 +303,7 @@ function App() {
                   <div className="h-48 rounded-xl bg-slate-100 animate-pulse" />
                 </div>
               ) : (
-                <Dashboard products={summaryProducts} allProducts={filteredProducts} periodFilter={periodFilter} showMoM={periodFilter !== 'all'} />
+                <Dashboard products={summaryProducts} allProducts={filteredProducts} periodFilter={periodFilter} showMoM={periodFilter !== 'all'} redemptions={redemptions} />
               )}
             </section>
           ) : screen === 'list' ? (

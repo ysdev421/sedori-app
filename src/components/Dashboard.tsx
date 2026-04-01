@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { DollarSign, Package, TrendingUp } from 'lucide-react';
 import { calculateProfit, calculatePointProfit, calculateProfitSummary, formatCurrency, getActualPayment, getRemainingActualPayment } from '@/lib/utils';
-import type { Product } from '@/types';
+import type { PointSiteRedemption, Product } from '@/types';
 
 interface DashboardProps {
   products: Product[];
   allProducts: Product[];
   periodFilter: 'thisMonth' | 'lastMonth' | 'thisYear' | 'all';
   showMoM?: boolean;
+  redemptions?: PointSiteRedemption[];
 }
 
 function getMonthKey(dateString?: string): string | null {
@@ -199,10 +200,29 @@ function momText(value: number | null) {
   return `前月比 ${sign}${value.toFixed(1)}%`;
 }
 
-export function Dashboard({ products, allProducts, periodFilter, showMoM = true }: DashboardProps) {
+export function Dashboard({ products, allProducts, periodFilter, showMoM = true, redemptions = [] }: DashboardProps) {
   const [chartMetric, setChartMetric] = useState<'revenue' | 'profit' | 'pointProfit'>('revenue');
 
   const summary = calculateProfitSummary(products);
+
+  // 期間フィルタに合わせてredemptionsを絞り込み
+  const filteredRedemptions = useMemo(() => {
+    const now = new Date();
+    return redemptions.filter((r) => {
+      if (periodFilter === 'all') return true;
+      const d = new Date(r.redeemedAt);
+      if (Number.isNaN(d.getTime())) return false;
+      if (periodFilter === 'thisYear') return d.getFullYear() === now.getFullYear();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      if (periodFilter === 'thisMonth') return d >= currentMonthStart && d < nextMonthStart;
+      if (periodFilter === 'lastMonth') return d >= lastMonthStart && d < currentMonthStart;
+      return true;
+    });
+  }, [redemptions, periodFilter]);
+  const totalRedemptions = filteredRedemptions.reduce((s, r) => s + r.amount, 0);
+
   const mom = calcMoM(allProducts, periodFilter);
   const inventoryMom = calcInventoryMoM(allProducts, periodFilter);
   const monthly = buildMonthlySeries(allProducts);
@@ -213,8 +233,8 @@ export function Dashboard({ products, allProducts, periodFilter, showMoM = true 
 
   const stats = [
     { label: '総売上', value: formatCurrency(summary.totalRevenue), sub: showMoM ? momText(mom.revenue) : null, subTone: mom.revenue === null ? 'text-slate-500' : mom.revenue >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: DollarSign, tone: 'from-sky-100 to-cyan-100 text-sky-700' },
-    { label: '粗利', value: formatCurrency(summary.totalPointProfit), sub: showMoM ? momText(mom.pointProfit) : null, subTone: mom.pointProfit === null ? 'text-slate-500' : mom.pointProfit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-emerald-100 to-green-100 text-emerald-700', negative: summary.totalPointProfit < 0, positive: summary.totalPointProfit > 0, positiveBlue: true },
-    { label: '粗利（P含む）', value: formatCurrency(summary.totalProfit), sub: showMoM ? momText(mom.profit) : null, subTone: mom.profit === null ? 'text-slate-500' : mom.profit >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: TrendingUp, tone: 'from-teal-100 to-emerald-100 text-teal-700', negative: summary.totalProfit < 0, positive: summary.totalProfit > 0, positiveBlue: true },
+    { label: '粗利', value: formatCurrency(summary.totalPointProfit + totalRedemptions), sub: totalRedemptions > 0 ? `還元+${formatCurrency(totalRedemptions)}含む` : (showMoM ? momText(mom.pointProfit) : null), subTone: 'text-violet-600', icon: TrendingUp, tone: 'from-emerald-100 to-green-100 text-emerald-700', negative: (summary.totalPointProfit + totalRedemptions) < 0, positive: (summary.totalPointProfit + totalRedemptions) > 0 },
+    { label: '粗利（P含む）', value: formatCurrency(summary.totalProfit + totalRedemptions), sub: totalRedemptions > 0 ? `還元+${formatCurrency(totalRedemptions)}含む` : (showMoM ? momText(mom.profit) : null), subTone: 'text-violet-600', icon: TrendingUp, tone: 'from-teal-100 to-emerald-100 text-teal-700', negative: (summary.totalProfit + totalRedemptions) < 0, positive: (summary.totalProfit + totalRedemptions) > 0 },
     { label: '在庫金額', value: formatCurrency(summary.inventoryValue), sub: showMoM ? momText(inventoryMom) : null, subTone: inventoryMom === null ? 'text-slate-500' : inventoryMom >= 0 ? 'text-emerald-600' : 'text-rose-600', icon: Package, tone: 'from-amber-100 to-orange-100 text-amber-700' },
   ];
 
