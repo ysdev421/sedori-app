@@ -6,8 +6,8 @@ import { useStore } from '@/lib/store';
 import { LoginForm } from '@/components/LoginForm';
 import { Header } from '@/components/Header';
 import { HomeScreen } from '@/components/HomeScreen';
-import { addStatusBatchLogToFirestore, getUserPointSiteRedemptions } from '@/lib/firestore';
-import type { PointSiteRedemption } from '@/types';
+import { addStatusBatchLogToFirestore, getUserKeikojiContracts, getUserPointSiteRedemptions } from '@/lib/firestore';
+import type { KeikojiContract, PointSiteRedemption } from '@/types';
 
 const Dashboard = lazy(() => import('@/components/Dashboard').then((m) => ({ default: m.Dashboard })));
 const ProductList = lazy(() => import('@/components/ProductList').then((m) => ({ default: m.ProductList })));
@@ -83,10 +83,12 @@ function App() {
   const [periodFilter, setPeriodFilter] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'all'>('thisMonth');
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [redemptions, setRedemptions] = useState<PointSiteRedemption[]>([]);
+  const [keikojiContracts, setKeikojiContracts] = useState<KeikojiContract[]>([]);
 
   useEffect(() => {
     if (!user) return;
     getUserPointSiteRedemptions(user.id).then(setRedemptions).catch(() => setRedemptions([]));
+    getUserKeikojiContracts(user.id).then(setKeikojiContracts).catch(() => setKeikojiContracts([]));
   }, [user]);
 
   const adminEmails = String(import.meta.env.VITE_ADMIN_EMAILS || '')
@@ -218,6 +220,7 @@ function App() {
             <HomeScreen
               products={filteredProducts}
               redemptions={redemptions}
+              keikojiContracts={keikojiContracts}
               onSelectSection={handleSelectSection}
             />
           ) : appSection === 'keikoji' ? (
