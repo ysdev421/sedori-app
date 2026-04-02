@@ -5,6 +5,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useStore } from '@/lib/store';
 import { LoginForm } from '@/components/LoginForm';
 import { Header } from '@/components/Header';
+import { HomeScreen } from '@/components/HomeScreen';
 import { addStatusBatchLogToFirestore, getUserPointSiteRedemptions } from '@/lib/firestore';
 import type { PointSiteRedemption } from '@/types';
 
@@ -52,7 +53,11 @@ const PointSiteRedemptionManager = lazy(() =>
 const GithubActionsMonitor = lazy(() =>
   import('@/components/GithubActionsMonitor').then((m) => ({ default: m.GithubActionsMonitor }))
 );
+const KeikojiApp = lazy(() =>
+  import('@/components/KeikojiApp').then((m) => ({ default: m.KeikojiApp }))
+);
 
+type AppSection = 'home' | 'sedori' | 'keikoji';
 type Screen = 'summary' | 'list' | 'sale' | 'saleHistory' | 'admin';
 type AppView = 'system' | 'purchaseLocationMaster' | 'saleLocationMaster' | 'statusBatchManager' | 'productMasterManager' | 'adminJanManager' | 'expenseManager' | 'annualSummary' | 'giftCardManager' | 'pointSiteRedemptionManager' | 'githubActionsMonitor';
 
@@ -61,6 +66,7 @@ function App() {
   const user = useStore((state) => state.user);
   const { products, deleteProductData, updateProductData } = useProducts(user?.id || null);
 
+  const [appSection, setAppSection] = useState<AppSection>('home');
   const [showAddForm, setShowAddForm] = useState(false);
   const [masterInitial, setMasterInitial] = useState<{ janCode: string; productName: string } | null>(null);
   const [addFormInitial, setAddFormInitial] = useState<{ janCode: string; productName: string } | null>(null);
@@ -185,13 +191,40 @@ function App() {
     return `${fmtYmd(targets[0])} - ${fmtYmd(targets[targets.length - 1])}`;
   })();
 
+  const handleSelectSection = (section: 'sedori' | 'keikoji') => {
+    setAppSection(section);
+    if (section === 'sedori') {
+      setScreen('list');
+      setAppView('system');
+    }
+  };
+
+  const handleBackToHome = () => {
+    setAppSection('home');
+    setAppView('system');
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <Header userName={user.displayName || user.email} />
+      <Header
+        userName={user.displayName || user.email}
+        appSection={appSection}
+        onBack={appSection !== 'home' ? handleBackToHome : undefined}
+      />
 
       <main className="flex-1 overflow-y-auto max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <Suspense fallback={<div className="glass-panel p-6 text-sm text-slate-600">読み込み中...</div>}>
-          {screen === 'admin' && appView !== 'system' ? (
+          {appSection === 'home' ? (
+            <HomeScreen
+              products={filteredProducts}
+              redemptions={redemptions}
+              onSelectSection={handleSelectSection}
+            />
+          ) : appSection === 'keikoji' ? (
+            <KeikojiApp userId={user.id} />
+          ) : (
+            <>
+            {screen === 'admin' && appView !== 'system' ? (
             <>
               <button
                 onClick={() => setAppView('system')}
@@ -350,40 +383,43 @@ function App() {
               <SaleHistoryScreen userId={user.id} />
             </section>
           )}
+          {filteredProducts.length === 0 && screen === 'list' && (
+            <div className="glass-panel text-center py-10 mt-8">
+              <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
+              <p className="text-soft text-sm mt-2">上の「商品登録」ボタンから最初の商品を登録してください</p>
+            </div>
+          )}
+            </>
+          )}
         </Suspense>
-
-        {filteredProducts.length === 0 && (
-          <div className="glass-panel text-center py-10 mt-8">
-            <p className="text-lg font-semibold text-slate-800">まだ商品データがありません</p>
-            <p className="text-soft text-sm mt-2">上の「商品登録」ボタンから最初の商品を登録してください</p>
-          </div>
-        )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-slate-200/60" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex items-stretch">
-          {([
-            { id: 'summary' as const, label: 'サマリー', icon: BarChart3 },
-            { id: 'list' as const, label: '在庫', icon: List },
-            { id: 'sale' as const, label: '売却', icon: Truck },
-            { id: 'saleHistory' as const, label: '売却履歴', icon: History },
-            { id: 'admin' as const, label: '管理', icon: Settings },
-          ] as const).map(({ id, label, icon: Icon }) => {
-            const active = screen === id;
-            return (
-              <button
-                key={id}
-                onClick={() => { setAppView('system'); setScreen(id); }}
-                className="relative flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors active:opacity-60"
-              >
-                <Icon className={`w-5 h-5 transition-colors ${active ? 'text-sky-500' : 'text-slate-400'}`} strokeWidth={active ? 2.5 : 1.8} />
-                <span className={`text-[10px] font-medium transition-colors ${active ? 'text-sky-500' : 'text-slate-400'}`}>{label}</span>
-                {active && <span className="absolute bottom-0 h-0.5 w-8 bg-sky-500 rounded-full" />}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {appSection === 'sedori' && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-slate-200/60" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex items-stretch">
+            {([
+              { id: 'summary' as const, label: 'サマリー', icon: BarChart3 },
+              { id: 'list' as const, label: '在庫', icon: List },
+              { id: 'sale' as const, label: '売却', icon: Truck },
+              { id: 'saleHistory' as const, label: '売却履歴', icon: History },
+              { id: 'admin' as const, label: '管理', icon: Settings },
+            ] as const).map(({ id, label, icon: Icon }) => {
+              const active = screen === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => { setAppView('system'); setScreen(id); }}
+                  className="relative flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors active:opacity-60"
+                >
+                  <Icon className={`w-5 h-5 transition-colors ${active ? 'text-sky-500' : 'text-slate-400'}`} strokeWidth={active ? 2.5 : 1.8} />
+                  <span className={`text-[10px] font-medium transition-colors ${active ? 'text-sky-500' : 'text-slate-400'}`}>{label}</span>
+                  {active && <span className="absolute bottom-0 h-0.5 w-8 bg-sky-500 rounded-full" />}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {showAddForm && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/30" />}>
