@@ -245,7 +245,7 @@ export function KeikojiApp({ userId }: KeikojiAppProps) {
   };
 
   return (
-    <div className="space-y-5 pb-20">
+    <div className="space-y-5">
       {/* サマリー */}
       <div className="glass-panel p-4 flex items-center justify-between">
         <div>
