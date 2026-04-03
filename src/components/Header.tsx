@@ -11,7 +11,7 @@ interface HeaderProps {
 
 const SECTION_LABELS: Record<string, { sub: string; title: string; gradient: string }> = {
   home: { sub: 'Side Business Portfolio', title: 'SideFolio', gradient: 'from-violet-700 via-indigo-600 to-blue-700' },
-  sedori: { sub: 'Resale Management', title: 'せどり', gradient: 'from-cyan-700 via-sky-600 to-blue-700' },
+  sedori: { sub: 'Resale Management', title: 'せどり管理', gradient: 'from-cyan-700 via-sky-600 to-blue-700' },
   keikoji: { sub: 'MNP Management', title: 'ケーコジ', gradient: 'from-violet-700 via-purple-600 to-indigo-700' },
 };
 
