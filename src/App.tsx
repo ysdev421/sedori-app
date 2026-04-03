@@ -215,11 +215,12 @@ function App() {
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx > 60 && touchStartX.current < 40 && appSection !== 'home') {
+    const startX = touchStartX.current;
+    touchStartX.current = null;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (dx > 60 && startX < 40 && appSection !== 'home') {
       handleBackToHome();
     }
-    touchStartX.current = null;
   };
 
   return (
