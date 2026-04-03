@@ -217,7 +217,7 @@ function App() {
         onBack={appSection !== 'home' ? handleBackToHome : undefined}
       />
 
-      <main className={`flex-1 overflow-y-auto max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 ${appSection === 'sedori' ? 'pb-[calc(6rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1.5rem+env(safe-area-inset-bottom))]'}`}>
+      <main className={`flex-1 overflow-y-auto max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 ${appSection === 'sedori' ? 'pb-24' : 'pb-6'}`}>
         <Suspense fallback={<div className="glass-panel p-6 text-sm text-slate-600">読み込み中...</div>}>
           {appSection === 'home' ? (
             <HomeScreen
@@ -403,7 +403,7 @@ function App() {
       </main>
 
       {appSection === 'sedori' && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-slate-200/60" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-slate-200/60">
           <div className="flex items-stretch">
             {([
               { id: 'summary' as const, label: 'サマリー', icon: BarChart3 },

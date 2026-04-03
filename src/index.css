@@ -15,17 +15,18 @@
 
   html {
     height: 100%;
-    height: -webkit-fill-available;
+    height: 100dvh;
     overflow: hidden;
     /* ノッチ・ホームバー領域を確保 */
     padding-top: env(safe-area-inset-top);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   body {
     height: 100%;
-    min-height: -webkit-fill-available;
+    height: 100dvh;
     overflow: hidden;
     /* タップ時のハイライト削除 */
     -webkit-tap-highlight-color: transparent;
