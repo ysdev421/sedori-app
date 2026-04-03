@@ -15,6 +15,7 @@
 
   html {
     height: 100%;
+    height: -webkit-fill-available;
     overflow: hidden;
     /* ノッチ・ホームバー領域を確保 */
     padding-top: env(safe-area-inset-top);
@@ -24,6 +25,7 @@
 
   body {
     height: 100%;
+    min-height: -webkit-fill-available;
     overflow: hidden;
     /* タップ時のハイライト削除 */
     -webkit-tap-highlight-color: transparent;
