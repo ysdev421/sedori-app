@@ -15,6 +15,8 @@ interface KeikojiAppProps {
   userId: string;
 }
 
+type PeriodFilter = 'thisMonth' | 'lastMonth' | 'thisYear' | 'all';
+
 const CARRIERS = ['ドコモ', 'au', 'SoftBank', '楽天モバイル', 'Y!mobile', 'UQmobile', 'その他'];
 
 const EMPTY_FORM = {
@@ -57,6 +59,19 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function isInPeriod(dateStr: string, periodFilter: PeriodFilter): boolean {
+  if (periodFilter === 'all') return true;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  if (periodFilter === 'thisYear') return d.getFullYear() === now.getFullYear();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  if (periodFilter === 'thisMonth') return d >= currentMonthStart && d < nextMonthStart;
+  return d >= lastMonthStart && d < currentMonthStart;
+}
+
 export function KeikojiApp({ userId }: KeikojiAppProps) {
   const [contracts, setContracts] = useState<KeikojiContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +82,7 @@ export function KeikojiApp({ userId }: KeikojiAppProps) {
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('thisMonth');
 
   const load = async () => {
     setLoading(true);
@@ -153,10 +169,11 @@ export function KeikojiApp({ userId }: KeikojiAppProps) {
     await load();
   };
 
-  const activeContracts = contracts.filter((c) => c.status === 'active');
-  const terminatedContracts = contracts.filter((c) => c.status === 'terminated');
+  const filteredContracts = contracts.filter((c) => isInPeriod(c.contractedAt, periodFilter));
+  const activeContracts = filteredContracts.filter((c) => c.status === 'active');
+  const terminatedContracts = filteredContracts.filter((c) => c.status === 'terminated');
 
-  const totalProfit = contracts.reduce((sum, c) => {
+  const totalProfit = filteredContracts.reduce((sum, c) => {
     const exp = calcExpense(c.adminFee, c.monthlyFee, c.holdDays, c.deviceCost);
     return sum + calcProfit(c.salePrice ?? 0, c.cashback ?? 0, exp);
   }, 0);
@@ -246,6 +263,36 @@ export function KeikojiApp({ userId }: KeikojiAppProps) {
 
   return (
     <div className="space-y-5">
+      <div className="glass-panel p-2 inline-flex gap-1">
+        <button
+          type="button"
+          onClick={() => setPeriodFilter('thisMonth')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${periodFilter === 'thisMonth' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'}`}
+        >
+          今月
+        </button>
+        <button
+          type="button"
+          onClick={() => setPeriodFilter('lastMonth')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${periodFilter === 'lastMonth' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'}`}
+        >
+          先月
+        </button>
+        <button
+          type="button"
+          onClick={() => setPeriodFilter('thisYear')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${periodFilter === 'thisYear' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'}`}
+        >
+          今年
+        </button>
+        <button
+          type="button"
+          onClick={() => setPeriodFilter('all')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${periodFilter === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white/70'}`}
+        >
+          全期間
+        </button>
+      </div>
       {/* サマリー */}
       <div className="glass-panel p-4 flex items-center justify-between">
         <div>
@@ -286,7 +333,7 @@ export function KeikojiApp({ userId }: KeikojiAppProps) {
               {terminatedContracts.map(renderContract)}
             </div>
           )}
-          {contracts.length === 0 && (
+          {filteredContracts.length === 0 && (
             <div className="glass-panel text-center py-12">
               <p className="text-slate-500 text-sm">回線が登録されていません</p>
             </div>
