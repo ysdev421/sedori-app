@@ -965,7 +965,7 @@ export async function updateSaleBatchHeader(
 }
 
 export async function getUserRecentSaleBatches(userId: string, maxCount = 20): Promise<SaleBatchSummary[]> {
-  const q = query(collection(db, 'sale_batches'), where('userId', '==', userId), limit(Math.max(1, maxCount * 3)));
+  const q = query(collection(db, 'sale_batches'), where('userId', '==', userId));
   const snap = await getDocs(q);
   const rows: SaleBatchSummary[] = snap.docs.map((d: any) => {
     const data = d.data() as any;
@@ -982,7 +982,11 @@ export async function getUserRecentSaleBatches(userId: string, maxCount = 20): P
 
   return rows
     .filter((r) => r.saleDate.trim() !== '' && r.saleLocation.trim() !== '' && !r.canceledAt)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .sort((a, b) => {
+      const bySaleDate = b.saleDate.localeCompare(a.saleDate);
+      if (bySaleDate !== 0) return bySaleDate;
+      return b.createdAt.localeCompare(a.createdAt);
+    })
     .slice(0, Math.max(1, maxCount));
 }
 
