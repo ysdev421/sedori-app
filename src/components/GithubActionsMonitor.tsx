@@ -22,6 +22,8 @@ type WorkflowRun = {
 };
 
 const STORAGE_KEY = 'gh_actions_monitor_settings_v1';
+const FIXED_OWNER = 'ysdev421';
+const FIXED_REPO = 'sidefolio';
 
 function formatDateTime(value?: string) {
   if (!value) return '-';
@@ -54,8 +56,6 @@ function statusClass(run: WorkflowRun) {
 }
 
 export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
-  const [owner, setOwner] = useState(import.meta.env.VITE_GITHUB_OWNER || '');
-  const [repo, setRepo] = useState(import.meta.env.VITE_GITHUB_REPO || '');
   const [workflowFile, setWorkflowFile] = useState(import.meta.env.VITE_GITHUB_KAITORI_WORKFLOW || 'kaitori-wiki-crawl.yml');
   const [branch, setBranch] = useState(import.meta.env.VITE_GITHUB_ACTIONS_BRANCH || '');
   const [token, setToken] = useState(import.meta.env.VITE_GITHUB_ACTIONS_TOKEN || '');
@@ -77,8 +77,6 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
         branch?: string;
         token?: string;
       };
-      if (parsed.owner) setOwner(parsed.owner);
-      if (parsed.repo) setRepo(parsed.repo);
       if (parsed.workflowFile) setWorkflowFile(parsed.workflowFile);
       if (parsed.branch) setBranch(parsed.branch);
       if (parsed.token) setToken(parsed.token);
@@ -87,14 +85,14 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
     }
   }, [userId]);
 
-  const canFetch = useMemo(() => owner.trim() && repo.trim() && workflowFile.trim(), [owner, repo, workflowFile]);
+  const canFetch = useMemo(() => workflowFile.trim(), [workflowFile]);
 
   const saveSettings = () => {
     window.localStorage.setItem(
       `${STORAGE_KEY}_${userId}`,
       JSON.stringify({
-        owner: owner.trim(),
-        repo: repo.trim(),
+        owner: FIXED_OWNER,
+        repo: FIXED_REPO,
         workflowFile: workflowFile.trim(),
         branch: branch.trim(),
         token: token.trim(),
@@ -113,7 +111,7 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
         per_page: '20',
       });
       if (branch.trim()) params.set('branch', branch.trim());
-      const url = `https://api.github.com/repos/${owner.trim()}/${repo.trim()}/actions/workflows/${encodeURIComponent(workflowFile.trim())}/runs?${params.toString()}`;
+      const url = `https://api.github.com/repos/${FIXED_OWNER}/${FIXED_REPO}/actions/workflows/${encodeURIComponent(workflowFile.trim())}/runs?${params.toString()}`;
       const headers: Record<string, string> = {
         Accept: 'application/vnd.github+json',
       };
@@ -146,7 +144,7 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
     }, 30000);
     return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, canFetch, owner, repo, workflowFile, branch, token]);
+  }, [autoRefresh, canFetch, workflowFile, branch, token]);
 
   const latest = runs[0];
 
@@ -158,11 +156,11 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Owner</label>
-            <input value={owner} onChange={(e) => setOwner(e.target.value)} className="input-field" placeholder="your-org" />
+            <input value={FIXED_OWNER} readOnly className="input-field bg-slate-50 text-slate-600" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Repo</label>
-            <input value={repo} onChange={(e) => setRepo(e.target.value)} className="input-field" placeholder="your-repo" />
+            <input value={FIXED_REPO} readOnly className="input-field bg-slate-50 text-slate-600" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Workflow file</label>
@@ -261,4 +259,3 @@ export function GithubActionsMonitor({ userId }: GithubActionsMonitorProps) {
     </div>
   );
 }
-
