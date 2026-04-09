@@ -61,12 +61,12 @@ export function LoginForm({ onSuccess }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-amber-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="glass-panel p-8 space-y-6 bg-gradient-to-br from-white/90 to-white/75">
+        <div className="glass-panel p-8 space-y-6 bg-white/90">
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-4">
-              <div className="bg-gradient-to-br from-teal-500 to-cyan-600 p-3 rounded-lg shadow-md shadow-teal-500/30">
+              <div className="bg-teal-600 p-3 rounded-lg shadow-md shadow-teal-500/20">
                 <LogIn className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -111,7 +111,7 @@ export function LoginForm({ onSuccess }: LoginProps) {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-semibold py-2.5 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-teal-600 text-white font-semibold py-2.5 rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {authLoading && <Loader className="w-5 h-5 animate-spin" />}
               {isLogin ? 'ログイン' : '登録'}

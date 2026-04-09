@@ -9,11 +9,11 @@ interface HeaderProps {
   onBack?: () => void;
 }
 
-const SECTION_LABELS: Record<string, { sub: string; title: string; gradient: string }> = {
-  home: { sub: 'Side Business Portfolio', title: 'SideFolio', gradient: 'from-emerald-700 via-teal-600 to-cyan-700' },
-  sedori: { sub: 'Resale Management', title: 'せどり管理', gradient: 'from-teal-700 via-cyan-600 to-sky-700' },
-  keikoji: { sub: 'MNP Management', title: '回線案件管理', gradient: 'from-slate-700 via-cyan-700 to-teal-700' },
-  annualSummary: { sub: 'Annual Summary', title: '年間サマリー', gradient: 'from-amber-600 via-orange-500 to-emerald-600' },
+const SECTION_LABELS: Record<string, { sub: string; title: string }> = {
+  home: { sub: 'Side Business Portfolio', title: 'SideFolio' },
+  sedori: { sub: 'Resale Management', title: 'せどり管理' },
+  keikoji: { sub: 'MNP Management', title: '回線案件管理' },
+  annualSummary: { sub: 'Annual Summary', title: '年間サマリー' },
 };
 
 export function Header({ userName, appSection = 'home', onBack }: HeaderProps) {
@@ -38,7 +38,7 @@ export function Header({ userName, appSection = 'home', onBack }: HeaderProps) {
               )}
               <div>
                 <p className="text-xs tracking-[0.14em] text-soft uppercase font-semibold">{label.sub}</p>
-                <h1 className={`text-xl sm:text-2xl font-black bg-gradient-to-r ${label.gradient} bg-clip-text text-transparent`}>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900">
                   {label.title}
                 </h1>
               </div>

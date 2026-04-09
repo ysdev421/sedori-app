@@ -21,7 +21,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Manrope', '"Noto Sans JP"', 'system-ui', 'sans-serif'],
+        sans: ['"Noto Sans JP"', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       animation: {
