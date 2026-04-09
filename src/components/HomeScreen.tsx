@@ -95,7 +95,7 @@ export function HomeScreen({ products, redemptions, keikojiContracts, onSelectSe
               <Package className="w-6 h-6 text-teal-700" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-900">せどり</p>
+              <p className="font-bold text-slate-900">せどり管理</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {thisYear}年利益{' '}
                 <span className={`font-semibold ${sedoriTotalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
