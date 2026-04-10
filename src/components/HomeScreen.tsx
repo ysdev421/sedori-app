@@ -62,13 +62,13 @@ export function HomeScreen({ products, redemptions, keikojiContracts, onSelectSe
       <div className="glass-panel p-5 bg-white/85">
         <p className="text-sm text-slate-500 font-semibold mb-1">{thisYear}年 副業合計純利益</p>
         <div className="flex items-end justify-between">
-          <p className={`text-4xl font-black tracking-tight ${totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+          <p className={`text-3xl font-black tracking-tight ${totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
             ¥{totalProfit.toLocaleString()}
           </p>
           {totalProfitWithPoint !== totalProfit && (
             <div className="text-right pb-0.5">
               <p className="text-xs text-slate-400 leading-tight">P込み</p>
-              <p className={`text-base font-bold leading-tight ${totalProfitWithPoint >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <p className={`text-xl font-bold leading-tight ${totalProfitWithPoint >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                 ¥{totalProfitWithPoint.toLocaleString()}
               </p>
             </div>
@@ -77,8 +77,8 @@ export function HomeScreen({ products, redemptions, keikojiContracts, onSelectSe
         {/* 副業別内訳 */}
         <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">せどり</p>
-            <p className={`text-base font-bold ${sedoriTotalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <p className="text-sm text-slate-400 mb-0.5">せどり</p>
+            <p className={`text-lg font-bold ${sedoriTotalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               ¥{sedoriTotalProfit.toLocaleString()}
             </p>
             {sedoriPointProfit !== sedoriTotalProfit && (
@@ -89,8 +89,8 @@ export function HomeScreen({ products, redemptions, keikojiContracts, onSelectSe
             )}
           </div>
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">回線案件管理</p>
-            <p className={`text-base font-bold ${keikojiProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <p className="text-sm text-slate-400 mb-0.5">回線案件管理</p>
+            <p className={`text-lg font-bold ${keikojiProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               ¥{keikojiProfit.toLocaleString()}
             </p>
             <p className="text-xs text-slate-400">{thisYear}年契約 {keikojiThisYear.length}回線</p>
