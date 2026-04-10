@@ -168,7 +168,7 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
 
   return (
     <div className="fixed inset-0 bg-black/45 flex items-end z-50" onClick={() => isDirty ? setShowLeaveConfirm(true) : onClose?.()}>
-      <div className="w-full bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto animate-slide-in" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full bg-white rounded-t-2xl p-6 overflow-y-auto animate-slide-in" style={{ maxHeight: '90dvh', paddingBottom: 'max(1.5rem, env(keyboard-inset-height, 0px))' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-slate-900">商品を編集</h2>
           <div className="flex items-center gap-2">
@@ -499,18 +499,18 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
           </div>
 
           {formData.status === 'sold' && (
-            <div className="glass-panel p-4 space-y-3">
-              <p className="text-sm font-semibold text-slate-800">売却情報</p>
+            <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 space-y-4">
+              <p className="text-base font-bold text-emerald-800">売却情報</p>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">売却価格</label>
+                <NumericInput
+                  integer
+                  value={formData.salePrice}
+                  onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
+                  className="input-field text-lg font-bold"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">売却価格</label>
-                  <NumericInput
-                    integer
-                    value={formData.salePrice}
-                    onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                    className="input-field"
-                  />
-                </div>
                 <div>
                   <RichDatePicker
                     label="売却日"
@@ -518,22 +518,35 @@ export function EditProductForm({ product, userId, onDelete, onClose }: EditProd
                     onChange={(v) => setFormData({ ...formData, saleDate: v })}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">売却先</label>
+                  <input
+                    type="text"
+                    value={formData.saleLocation}
+                    onChange={(e) => setFormData({ ...formData, saleLocation: e.target.value })}
+                    className="input-field"
+                    placeholder="例: メルカリ"
+                    list="sale-location-list"
+                  />
+                  <datalist id="sale-location-list">
+                    {purchaseLocations.map((loc) => <option key={loc} value={loc} />)}
+                  </datalist>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">売却先</label>
-                <input
-                  type="text"
-                  value={formData.saleLocation}
-                  onChange={(e) => setFormData({ ...formData, saleLocation: e.target.value })}
-                  className="input-field"
-                />
-              </div>
+              {formData.salePrice && (
+                <div className="rounded-xl bg-white/70 px-3 py-2 flex items-center justify-between">
+                  <span className="text-sm text-slate-600">利益</span>
+                  <span className={`text-lg font-black ${(parseFloat(formData.salePrice) - (product.purchasePrice)) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    ¥{(parseFloat(formData.salePrice) - (product.purchasePrice - (product.point ?? 0))).toLocaleString()}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
           {error && <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{error}</div>}
 
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur py-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+          <div className="sticky bottom-0 bg-white/95 backdrop-blur pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}>
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}

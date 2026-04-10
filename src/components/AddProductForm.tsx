@@ -948,6 +948,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
             <Plus className="w-5 h-5" />
             商品を追加
           </button>
+          <div style={{ height: 'max(1rem, env(safe-area-inset-bottom, 0px))' }} />
         </form>
         </div>
       </div>
