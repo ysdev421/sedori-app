@@ -61,17 +61,19 @@ export function HomeScreen({ products, redemptions, keikojiContracts, onSelectSe
       {/* 年間サマリー合計 */}
       <div className="glass-panel p-5 bg-white/85">
         <p className="text-xs text-slate-500 font-semibold mb-1">{thisYear}年 副業合計純利益</p>
-        <p className={`text-4xl font-black tracking-tight ${totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          ¥{totalProfit.toLocaleString()}
-        </p>
-        {totalProfitWithPoint !== totalProfit && (
-          <p className="text-xs text-slate-400 mt-0.5">
-            ポイント込み{' '}
-            <span className={totalProfitWithPoint >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
-              ¥{totalProfitWithPoint.toLocaleString()}
-            </span>
+        <div className="flex items-end justify-between">
+          <p className={`text-4xl font-black tracking-tight ${totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            ¥{totalProfit.toLocaleString()}
           </p>
-        )}
+          {totalProfitWithPoint !== totalProfit && (
+            <div className="text-right pb-0.5">
+              <p className="text-[10px] text-slate-400 leading-tight">P込み</p>
+              <p className={`text-sm font-bold leading-tight ${totalProfitWithPoint >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                ¥{totalProfitWithPoint.toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
         {/* 副業別内訳 */}
         <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
           <div>
