@@ -67,7 +67,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [breakdownCash, setBreakdownCash] = useState('');
   const [breakdownGiftUsages, setBreakdownGiftUsages] = useState<{ cardId: string; amount: string }[]>([]);
-  const [showDiscount, setShowDiscount] = useState(false);
+  const [listPrice, setListPrice] = useState('');
   const [couponDiscount, setCouponDiscount] = useState('');
   const [reservePointUse, setReservePointUse] = useState('');
   const [immediatePointUse, setImmediatePointUse] = useState('');
@@ -182,6 +182,16 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
     const allocated = Math.max(0, Math.round(total * (qty / totalQty)));
     setFormData((prev) => (prev.purchasePrice === String(allocated) ? prev : { ...prev, purchasePrice: String(allocated) }));
   }, [groupMode, groupProrateTotal, groupTotalQuantity, formData.quantity]);
+
+  // 元値・クーポンから購入金額を自動計算
+  useEffect(() => {
+    const list = parseFloat(listPrice) || 0;
+    if (list > 0) {
+      const coupon = parseFloat(couponDiscount) || 0;
+      const calculated = Math.max(0, list - coupon);
+      setFormData((prev) => ({ ...prev, purchasePrice: String(calculated) }));
+    }
+  }, [listPrice, couponDiscount]);
 
   useEffect(() => {
     if (!groupMode) return;
@@ -395,7 +405,7 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
       setBreakdownGiftUsages([]);
       setBreakdownCash('');
       setBreakdownPointUse('0');
-      setShowDiscount(false);
+      setListPrice('');
       setCouponDiscount('');
       setReservePointUse('');
       setImmediatePointUse('');
@@ -694,243 +704,186 @@ export function AddProductForm({ userId, initialJanCode, initialProductName, onC
             </div>
           </div>
 
-          <div className="glass-panel p-3 space-y-3">
+          <div className="glass-panel p-3 space-y-4">
+            <p className="text-xs font-semibold text-slate-500">購入金額・割引</p>
+
+            {/* ① 元値・クーポン（任意） */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  購入金額合計
-                  <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white tracking-wide align-middle">必須</span>
-                  <span className="block text-[11px] font-normal text-slate-500 mt-0.5">ポイント利用分も含む</span>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  元値（定価）
+                  <span className="ml-1 text-[10px] text-slate-400">任意</span>
                 </label>
                 <NumericInput
                   integer
-                  value={formData.purchasePrice}
-                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
-                  disabled={groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0}
-                  required
-                  className="input-field"
-                  placeholder="0"
+                  value={listPrice}
+                  onChange={(e) => setListPrice(e.target.value)}
+                  className="input-field py-1.5 text-sm"
+                  placeholder="例: 10000"
                 />
-                {groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0 && (
-                  <p className="mt-1 text-xs text-violet-600">グループ総数量ベースで自動計算中です</p>
-                )}
-                {fieldErrors.purchasePrice && <p className="mt-1 text-xs text-rose-600">{fieldErrors.purchasePrice}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  付与ポイント
-                  <span className="block text-[11px] font-normal text-slate-500 mt-0.5 invisible">_</span>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  クーポン値引き
+                  <span className="ml-1 text-[10px] text-slate-400">任意</span>
                 </label>
                 <NumericInput
                   integer
-                  value={formData.point}
-                  onChange={(e) => setFormData({ ...formData, point: e.target.value })}
-                  className="input-field"
+                  value={couponDiscount}
+                  onChange={(e) => setCouponDiscount(e.target.value)}
+                  className="input-field py-1.5 text-sm"
                   placeholder="0"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowProrate((v) => !v)}
-                  disabled={groupMode}
-                  className="mt-1.5 text-xs text-violet-600 hover:text-violet-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {groupMode ? 'グループ自動按分中' : showProrate ? '▲ 按分を閉じる' : '÷ まとめ買い按分'}
-                </button>
-                {!groupMode && showProrate && (
-                  <div className="mt-2 p-2 rounded-xl bg-violet-50 border border-violet-100 space-y-2">
-                    <p className="text-[11px] text-violet-700 font-semibold">まとめ買い全体の数値を入力すると、この商品の割合で自動計算します</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[11px] text-slate-600 mb-0.5">全体合計金額</label>
-                        <NumericInput
-                          integer
-                          value={prorateTotal}
-                          onChange={(e) => setProrateTotal(e.target.value)}
-                          className="input-field py-1.5 text-sm"
-                          placeholder="例: 5000"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] text-slate-600 mb-0.5">全体合計P</label>
-                        <NumericInput
-                          integer
-                          value={proratePoint}
-                          onChange={(e) => setProratePoint(e.target.value)}
-                          className="input-field py-1.5 text-sm"
-                          placeholder="例: 50"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const total = parseFloat(prorateTotal) || 0;
-                        const totalP = parseFloat(proratePoint) || 0;
-                        const price = parseFloat(formData.purchasePrice) || 0;
-                        if (total > 0 && totalP > 0 && price > 0) {
-                          const allocated = Math.round(totalP * (price / total));
-                          setFormData((prev) => ({ ...prev, point: String(allocated) }));
-                          setShowProrate(false);
-                        }
-                      }}
-                      className="w-full py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition"
-                    >
-                      按分して反映
-                    </button>
-                  </div>
-                )}
-                {extraPoints.map((v, i) => (
-                  <div key={i} className="flex items-center gap-1 mt-1">
-                    <span className="text-slate-400 text-xs font-bold">+</span>
-                    <NumericInput
-                      integer
-                      value={v}
-                      onChange={(e) => {
-                        const next = [...extraPoints];
-                        next[i] = e.target.value;
-                        setExtraPoints(next);
-                      }}
-                      className="input-field py-1.5 text-sm"
-                      placeholder="追加P"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setExtraPoints((prev) => prev.filter((_, j) => j !== i))}
-                      className="text-slate-400 hover:text-rose-500 transition text-xs px-1"
-                    >✕</button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setExtraPoints((prev) => [...prev, ''])}
-                  className="mt-1.5 text-xs text-sky-600 hover:text-sky-700 font-semibold"
-                >
-                  ＋ 追加P入力
-                </button>
-                {extraPoints.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    合計: <span className="font-semibold text-slate-700">
-                      {(parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0)} P
-                    </span>
-                  </p>
-                )}
               </div>
             </div>
-            <div className="rounded-xl bg-white/60 border border-white/80 px-3 py-2 flex items-center justify-between">
-              <span className="text-sm text-slate-600">実質原価</span>
-              <div className="text-right">
-                {(() => {
-                  const purchase = parseFloat(formData.purchasePrice) || 0;
-                  const earned = (parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0);
-                  const effectiveCost = purchase - earned;
-                  const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
-                  return (
-                    <>
-                      <span className="text-base font-bold text-slate-900">{effectiveCost.toLocaleString('ja-JP')} 円</span>
-                      <span className="block text-[11px] text-slate-400">購入金額 - 付与P</span>
-                      {qty >= 2 && (
-                        <span className="block text-xs text-slate-500 mt-0.5">
-                          1個あたり <span className="font-semibold text-slate-700">{Math.round(effectiveCost / qty).toLocaleString('ja-JP')} 円</span>
-                        </span>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
+            {listPrice && <p className="text-[11px] text-slate-400 -mt-2">元値とクーポンを入力すると購入金額を自動計算します</p>}
 
-          {/* 割引・ポイント使用内訳 */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowDiscount((v) => !v)}
-              className="text-xs font-semibold text-orange-600 hover:text-orange-700 transition"
-            >
-              {showDiscount ? '▲ 割引・ポイント使用内訳を閉じる' : '▼ クーポン・ポイント使用内訳を入力'}
-            </button>
-            {showDiscount && (
-              <div className="mt-2 rounded-xl border border-orange-200 bg-orange-50 p-3 space-y-3">
-                <p className="text-xs text-orange-700 font-semibold">購入金額（クーポン後）から差し引く項目を入力してください</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">保有ポイント使用</label>
-                    <NumericInput
-                      integer
-                      value={reservePointUse}
-                      onChange={(e) => setReservePointUse(e.target.value)}
-                      className="input-field py-1.5 text-sm"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      今すぐポイント使用
-                      <span className="ml-1 text-[10px] text-orange-500 font-semibold">Yahoo限定</span>
-                    </label>
-                    <NumericInput
-                      integer
-                      value={immediatePointUse}
-                      onChange={(e) => setImmediatePointUse(e.target.value)}
-                      className="input-field py-1.5 text-sm"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
+            {/* ② 購入金額（クーポン後・必須） */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                購入金額（クーポン後）
+                <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 text-white tracking-wide align-middle">必須</span>
+              </label>
+              <NumericInput
+                integer
+                value={formData.purchasePrice}
+                onChange={(e) => { setListPrice(''); setFormData({ ...formData, purchasePrice: e.target.value }); }}
+                disabled={groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0}
+                required
+                className="input-field"
+                placeholder="0"
+              />
+              {groupMode && (parseInt(groupTotalQuantity, 10) || 0) > 0 && (parseFloat(groupProrateTotal) || 0) > 0 && (
+                <p className="mt-1 text-xs text-violet-600">グループ総数量ベースで自動計算中です</p>
+              )}
+              {fieldErrors.purchasePrice && <p className="mt-1 text-xs text-rose-600">{fieldErrors.purchasePrice}</p>}
+            </div>
+
+            {/* ③ ポイント使用（仕入れ原価に影響） */}
+            <div>
+              <p className="text-xs font-medium text-slate-600 mb-2">ポイント使用 <span className="font-normal text-slate-400">→ 仕入れ原価から差し引きます</span></p>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    クーポン値引き
-                    <span className="ml-1 text-[10px] text-slate-400">（記録のみ・購入金額に既に反映済み）</span>
-                  </label>
+                  <label className="block text-xs text-slate-600 mb-1">保有ポイント使用</label>
                   <NumericInput
                     integer
-                    value={couponDiscount}
-                    onChange={(e) => setCouponDiscount(e.target.value)}
+                    value={reservePointUse}
+                    onChange={(e) => setReservePointUse(e.target.value)}
                     className="input-field py-1.5 text-sm"
                     placeholder="0"
                   />
                 </div>
-                {/* 計算プレビュー */}
-                {(() => {
-                  const purchase = parseFloat(formData.purchasePrice) || 0;
-                  const reserve = parseFloat(reservePointUse) || 0;
-                  const immediate = parseFloat(immediatePointUse) || 0;
-                  const coupon = parseFloat(couponDiscount) || 0;
-                  const actualCost = purchase - reserve - immediate;
-                  const listPrice = purchase + coupon;
-                  return (
-                    <div className="rounded-lg bg-white/70 px-3 py-2 space-y-1 text-xs">
-                      {coupon > 0 && (
-                        <div className="flex justify-between text-slate-500">
-                          <span>元値（参考）</span>
-                          <span>¥{listPrice.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-slate-500">
-                        <span>購入金額（クーポン後）</span>
-                        <span>¥{purchase.toLocaleString()}</span>
-                      </div>
-                      {reserve > 0 && (
-                        <div className="flex justify-between text-slate-500">
-                          <span>保有P使用</span>
-                          <span>- ¥{reserve.toLocaleString()}</span>
-                        </div>
-                      )}
-                      {immediate > 0 && (
-                        <div className="flex justify-between text-slate-500">
-                          <span>今すぐP使用</span>
-                          <span>- ¥{immediate.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-slate-800 border-t border-slate-200 pt-1">
-                        <span>仕入れ原価</span>
-                        <span>¥{actualCost.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1">
+                    今すぐポイント使用
+                    <span className="ml-1 text-[10px] font-semibold text-amber-600">Yahoo限定</span>
+                  </label>
+                  <NumericInput
+                    integer
+                    value={immediatePointUse}
+                    onChange={(e) => setImmediatePointUse(e.target.value)}
+                    className="input-field py-1.5 text-sm"
+                    placeholder="0"
+                  />
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* ④ 仕入れ原価（自動計算） */}
+            {(() => {
+              const purchase = parseFloat(formData.purchasePrice) || 0;
+              const reserve = parseFloat(reservePointUse) || 0;
+              const immediate = parseFloat(immediatePointUse) || 0;
+              const actualCost = purchase - reserve - immediate;
+              const qty = Math.max(1, parseInt(formData.quantity, 10) || 1);
+              return (
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-emerald-800">仕入れ原価</span>
+                    <div className="text-right">
+                      <span className="text-base font-bold text-emerald-700">{actualCost.toLocaleString('ja-JP')} 円</span>
+                      {qty >= 2 && (
+                        <span className="block text-xs text-emerald-600">1個あたり {Math.round(actualCost / qty).toLocaleString('ja-JP')} 円</span>
+                      )}
+                    </div>
+                  </div>
+                  {(reserve > 0 || immediate > 0) && (
+                    <p className="text-[11px] text-emerald-600 mt-1">購入金額 {purchase.toLocaleString()} - P使用 {(reserve + immediate).toLocaleString()} = {actualCost.toLocaleString()} 円</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ⑤ 付与ポイント（参考） */}
+            <div className="border-t border-slate-100 pt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                付与ポイント
+                <span className="ml-1 text-[11px] font-normal text-slate-400">購入後にもらえるポイント（参考のみ・仕入れ計算に影響しません）</span>
+              </label>
+              <NumericInput
+                integer
+                value={formData.point}
+                onChange={(e) => setFormData({ ...formData, point: e.target.value })}
+                className="input-field"
+                placeholder="0"
+              />
+              <button
+                type="button"
+                onClick={() => setShowProrate((v) => !v)}
+                disabled={groupMode}
+                className="mt-1.5 text-xs text-violet-600 hover:text-violet-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {groupMode ? 'グループ自動按分中' : showProrate ? '▲ 按分を閉じる' : '÷ まとめ買い按分'}
+              </button>
+              {!groupMode && showProrate && (
+                <div className="mt-2 p-2 rounded-xl bg-violet-50 border border-violet-100 space-y-2">
+                  <p className="text-[11px] text-violet-700 font-semibold">まとめ買い全体の数値を入力すると、この商品の割合で自動計算します</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] text-slate-600 mb-0.5">全体合計金額</label>
+                      <NumericInput integer value={prorateTotal} onChange={(e) => setProrateTotal(e.target.value)} className="input-field py-1.5 text-sm" placeholder="例: 5000" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-600 mb-0.5">全体合計P</label>
+                      <NumericInput integer value={proratePoint} onChange={(e) => setProratePoint(e.target.value)} className="input-field py-1.5 text-sm" placeholder="例: 50" />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const total = parseFloat(prorateTotal) || 0;
+                      const totalP = parseFloat(proratePoint) || 0;
+                      const price = parseFloat(formData.purchasePrice) || 0;
+                      if (total > 0 && totalP > 0 && price > 0) {
+                        const allocated = Math.round(totalP * (price / total));
+                        setFormData((prev) => ({ ...prev, point: String(allocated) }));
+                        setShowProrate(false);
+                      }
+                    }}
+                    className="w-full py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition"
+                  >
+                    按分して反映
+                  </button>
+                </div>
+              )}
+              {extraPoints.map((v, i) => (
+                <div key={i} className="flex items-center gap-1 mt-1">
+                  <span className="text-slate-400 text-xs font-bold">+</span>
+                  <NumericInput
+                    integer value={v}
+                    onChange={(e) => { const next = [...extraPoints]; next[i] = e.target.value; setExtraPoints(next); }}
+                    className="input-field py-1.5 text-sm" placeholder="追加P"
+                  />
+                  <button type="button" onClick={() => setExtraPoints((prev) => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-rose-500 transition text-xs px-1">✕</button>
+                </div>
+              ))}
+              <button type="button" onClick={() => setExtraPoints((prev) => [...prev, ''])} className="mt-1.5 text-xs text-sky-600 hover:text-sky-700 font-semibold">
+                ＋ 追加P入力
+              </button>
+              {extraPoints.length > 0 && (
+                <p className="mt-1 text-xs text-slate-500">合計: <span className="font-semibold text-slate-700">{(parseFloat(formData.point) || 0) + extraPoints.reduce((s, p) => s + (parseFloat(p) || 0), 0)} P</span></p>
+              )}
+            </div>
           </div>
 
           {/* 支払い内訳（ギフトカード使用時） */}
