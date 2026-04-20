@@ -91,6 +91,38 @@ function App() {
     getUserKeikojiContracts(user.id).then(setKeikojiContracts).catch(() => setKeikojiContracts([]));
   }, [user]);
 
+  const handleBackToHome = () => {
+    setAppSection('home');
+    setAppView('system');
+  };
+
+  // スワイプで戻る（右スワイプ → ホームへ）
+  useEffect(() => {
+    if (appSection === 'home') return;
+    let startX = 0;
+    let startY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const deltaX = e.changedTouches[0].clientX - startX;
+      const deltaY = Math.abs(e.changedTouches[0].clientY - startY);
+      // 右方向 80px以上 かつ 横移動が縦の1.5倍以上
+      if (deltaX > 80 && deltaX > deltaY * 1.5) {
+        handleBackToHome();
+      }
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [appSection]);
+
   const filteredProducts = products;
 
   const summaryProducts = filteredProducts.filter((p) => {
@@ -194,38 +226,6 @@ function App() {
       setAppView('system');
     }
   };
-
-  const handleBackToHome = () => {
-    setAppSection('home');
-    setAppView('system');
-  };
-
-  // スワイプで戻る（右スワイプ → ホームへ）
-  useEffect(() => {
-    if (appSection === 'home') return;
-    let startX = 0;
-    let startY = 0;
-
-    const onTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      const deltaX = e.changedTouches[0].clientX - startX;
-      const deltaY = Math.abs(e.changedTouches[0].clientY - startY);
-      // 右方向 80px以上 かつ 横移動が縦の1.5倍以上
-      if (deltaX > 80 && deltaX > deltaY * 1.5) {
-        handleBackToHome();
-      }
-    };
-
-    document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchend', onTouchEnd, { passive: true });
-    return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [appSection]);
 
   return (
     <div className="flex flex-col h-full">
