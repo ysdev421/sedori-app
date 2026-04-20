@@ -367,51 +367,49 @@ export function ProductList({
         </p>
       )}
       <div className="card p-2.5 animate-fade-in space-y-2">
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex items-center gap-1.5 flex-nowrap overflow-hidden">
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap shrink-0 ${statusBadge(product.status)}`}>
-                {statusLabel(product.status)}
-              </span>
-              <button
-                type="button"
-                onClick={() => setEditingProduct(product)}
-                className="font-semibold text-slate-900 truncate min-w-0 text-left hover:text-sky-700 transition-colors flex-1"
-                title={product.janCode ? `${product.productName} (JAN:${product.janCode})` : product.productName}
-              >
-                {product.productName}
-                {product.janCode ? ` (JAN:${product.janCode})` : ''}
-              </button>
-              {product.janCode && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const ok = await copyToClipboard(product.janCode || '');
-                    if (ok) {
-                      setCopiedProductId(product.id);
-                      window.setTimeout(() => {
-                        setCopiedProductId((prev) => (prev === product.id ? null : prev));
-                      }, 1200);
-                    }
-                  }}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
-                  title="JANをコピー"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span className="hidden sm:inline">JANコピー</span>
-                </button>
-              )}
-              {copiedProductId === product.id && (
-                <span className="hidden sm:inline text-[11px] text-emerald-700 font-semibold shrink-0 whitespace-nowrap">コピーしました</span>
-              )}
-            </div>
-            <p className="text-[11px] text-slate-600 whitespace-nowrap shrink-0">
-              {product.purchaseLocation}
-            </p>
-          </div>
+      <div className="space-y-1">
+        {/* 1行目: ステータスバッジ + 購入場所 */}
+        <div className="flex items-center justify-between gap-2">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap shrink-0 ${statusBadge(product.status)}`}>
+            {statusLabel(product.status)}
+          </span>
+          <p className="text-[11px] text-slate-600 whitespace-nowrap shrink-0">
+            {product.purchaseLocation}
+          </p>
         </div>
-
+        {/* 2行目: 商品名（折り返しあり） + JANコピー */}
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setEditingProduct(product)}
+            className="font-semibold text-slate-900 text-left hover:text-sky-700 transition-colors flex-1 break-words min-w-0"
+          >
+            {product.productName}
+            {product.janCode ? ` (JAN:${product.janCode})` : ''}
+          </button>
+          {product.janCode && (
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await copyToClipboard(product.janCode || '');
+                if (ok) {
+                  setCopiedProductId(product.id);
+                  window.setTimeout(() => {
+                    setCopiedProductId((prev) => (prev === product.id ? null : prev));
+                  }, 1200);
+                }
+              }}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+              title="JANをコピー"
+            >
+              <Copy className="w-3 h-3" />
+              <span className="hidden sm:inline">JANコピー</span>
+            </button>
+          )}
+          {copiedProductId === product.id && (
+            <span className="text-[11px] text-emerald-700 font-semibold shrink-0 whitespace-nowrap">コピーしました</span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 text-sm">
