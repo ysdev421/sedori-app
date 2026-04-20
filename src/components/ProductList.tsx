@@ -582,24 +582,25 @@ export function ProductList({
               <div className="space-y-2">
                 {janInventoryGroups.map((g) => (
                   <div key={`${g.janCode}_${g.productName}`} className="card p-3 space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{g.productName}</p>
-                        <p className="text-xs text-slate-600">
-                          {g.janCode ? `JAN:${g.janCode}` : 'JAN未設定'}
-                        </p>
+                    <div className="space-y-1">
+                      {/* 1行目: JANコード + コピーボタン */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                          {g.janCode ? g.janCode : 'JAN未設定'}
+                        </span>
+                        {g.janCode && (
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(g.janCode)}
+                            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
+                            title="JANをコピー"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
-                      {g.janCode && (
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(g.janCode)}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] border border-slate-200 text-slate-600 hover:bg-slate-50 shrink-0"
-                          title="JANをコピー"
-                        >
-                          <Copy className="w-3 h-3" />
-                          JANコピー
-                        </button>
-                      )}
+                      {/* 2行目: 商品名（折り返しあり） */}
+                      <p className="text-sm font-semibold text-slate-900 break-words">{g.productName}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                       <p className="text-slate-800 whitespace-nowrap">
